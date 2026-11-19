@@ -1,0 +1,1535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Happiness Through Volunteering</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+:root{
+  --paper:#EEE5D1; --cream:#F8F1E2; --ink:#1C1814; --ink-2:#4A4038; --sand:#C9A46A;
+  --blood:#C9302C; --saffron:#EA8F22; --green:#1F5C38; --sky:#3F7FA6; --gold:#E9B93A; --pink:#F2A49C;
+  --display:"Anton",Impact,sans-serif; --body:"Geist",system-ui,sans-serif;
+  --push:cubic-bezier(.76,0,.24,1); --k:.3; --kt:.55; --out:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.3,1.5,.5,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#111;overflow:hidden}
+body{font-family:var(--body);color:var(--ink);-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;overflow:hidden;background:#111;transform-origin:50% 50%}
+
+/* ---------- slides + push / parallax transition ---------- */
+.slide{position:absolute;inset:0;background:var(--paper);overflow:hidden;visibility:hidden}
+.slide.active,.slide.moving{visibility:visible}
+.slide .bg,.slide .fg{position:absolute;inset:0}
+.slide::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:60;mix-blend-mode:multiply;opacity:.5;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .3  0 0 0 0 .24  0 0 0 0 .16  0 0 0 .5 0'/></filter><rect width='300' height='300' filter='url(%23n)' opacity='.6'/></svg>")}
+/* transition: a skewed linocut band in the next act's colour sweeps across; the new slide is uncovered
+   by its trailing edge (same curve, so they stay locked); the old slide recedes under it */
+:root{--T:.95s}
+.in-r,.in-l{z-index:2} #sweep{position:absolute;inset:0;z-index:3;pointer-events:none}
+#sweep i{position:absolute;inset:-20px 0;clip-path:polygon(0 0,0 0,0 0)} #sweep .sa{background:var(--sc,var(--ink));filter:url(#lino)} #sweep .sb{background:var(--sd,var(--ink))}
+.out-l{animation:outL var(--T) cubic-bezier(.55,0,.75,.3) forwards}.out-r{animation:outR var(--T) cubic-bezier(.55,0,.75,.3) forwards}
+.in-r{animation:revR var(--T) var(--push) forwards}.in-l{animation:revL var(--T) var(--push) forwards}
+.in-r>.fg{animation:pxInR calc(var(--T) + .15s) var(--push) forwards}.in-l>.fg{animation:pxInL calc(var(--T) + .15s) var(--push) forwards}
+#sweep.fwd .sa{animation:bandR var(--T) var(--push) forwards} #sweep.fwd .sb{animation:edgeR var(--T) var(--push) forwards}
+#sweep.back .sa{animation:bandL var(--T) var(--push) forwards} #sweep.back .sb{animation:edgeL var(--T) var(--push) forwards}
+@keyframes outL{to{transform:translateX(-24%) scale(.93);filter:brightness(.75)}} @keyframes outR{to{transform:translateX(24%) scale(.93);filter:brightness(.75)}}
+@keyframes revR{from{clip-path:polygon(152% 0,170% 0,170% 100%,140% 100%)}to{clip-path:polygon(0% 0,170% 0,170% 100%,-12% 100%)}}
+@keyframes revL{from{clip-path:polygon(-70% 0,-40% 0,-52% 100%,-70% 100%)}to{clip-path:polygon(-70% 0,112% 0,100% 100%,-70% 100%)}}
+@keyframes bandR{from{clip-path:polygon(112% 0,152% 0,140% 100%,100% 100%)}to{clip-path:polygon(-40% 0,0% 0,-12% 100%,-52% 100%)}}
+@keyframes edgeR{from{clip-path:polygon(149% 0,152% 0,140% 100%,137% 100%)}to{clip-path:polygon(-3% 0,0% 0,-12% 100%,-15% 100%)}}
+@keyframes bandL{from{clip-path:polygon(-40% 0,0% 0,-12% 100%,-52% 100%)}to{clip-path:polygon(112% 0,152% 0,140% 100%,100% 100%)}}
+@keyframes edgeL{from{clip-path:polygon(-40% 0,-37% 0,-49% 100%,-52% 100%)}to{clip-path:polygon(112% 0,115% 0,103% 100%,100% 100%)}}
+@keyframes pxInR{from{transform:translateX(320px)}to{transform:none}} @keyframes pxInL{from{transform:translateX(-320px)}to{transform:none}}
+
+/* ---------- linocut colour ---------- */
+.blk{position:absolute;filter:url(#lino)}
+.blk::after{content:"";position:absolute;inset:0;mix-blend-mode:screen;opacity:.22;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -9 4.2'/></filter><rect width='260' height='260' filter='url(%23s)'/></svg>")}
+.pb{position:relative;isolation:isolate}
+.pb::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--c);filter:url(#lino)}
+
+/* ---------- choreography (each slide uses its own moves) ---------- */
+.a{opacity:0}
+.slide.active .a{animation-duration:calc(var(--t,.8s)*var(--kt));animation-timing-function:var(--out);animation-fill-mode:both;animation-delay:calc(var(--d,0s)*var(--k) + var(--b,.2s))}
+.slide.active .wipe{animation-name:wipeR;animation-timing-function:var(--push);--t:.9s}
+.slide.active .wipe-l{animation-name:wipeL;animation-timing-function:var(--push);--t:.9s}
+.slide.active .wipe-u{animation-name:wipeU;animation-timing-function:var(--push);--t:1.1s}
+.slide.active .wipe-d{animation-name:wipeD;animation-timing-function:var(--push);--t:1s}
+.slide.active .iris{animation-name:iris;animation-timing-function:cubic-bezier(.6,0,.3,1);--t:1.3s}
+.slide.active .shutter-t{animation-name:shutT;animation-timing-function:var(--push);--t:.9s}
+.slide.active .shutter-b{animation-name:shutB;animation-timing-function:var(--push);--t:.9s}
+.slide.active .rise{animation-name:rise}
+.slide.active .fade{animation-name:fade}
+.slide.active .stamp{animation-name:stamp;--t:.5s;animation-timing-function:cubic-bezier(.5,0,.3,1.4)}
+.slide.active .pop{animation-name:pop;--t:.7s;animation-timing-function:var(--spring)}
+.slide.active .hang{animation-name:hang;--t:.9s;animation-timing-function:var(--spring)}
+.slide.active .flip{animation-name:flip;--t:1s;animation-timing-function:cubic-bezier(.2,1.2,.4,1)}
+.slide.active .deal{animation-name:deal;--t:.9s;animation-timing-function:cubic-bezier(.2,.9,.3,1.05)}
+.slide.active .corner{animation-name:corner;--t:.9s;animation-timing-function:cubic-bezier(.2,.9,.25,1)}
+.slide.active .swing{animation-name:swing;--t:1.8s;animation-timing-function:ease-out;transform-origin:50% 0}
+.slide.active .tile{animation-name:tile;--t:.7s;animation-timing-function:var(--push)}
+.slide.active .from-r{animation-name:fromR;--t:.8s}
+.slide.active .from-l{animation-name:fromL;--t:.8s}
+.slide.active .from-t{animation-name:fromT;--t:.9s}
+.slide.active .from-b{animation-name:fromB;--t:.9s}
+.slide.active .behind{animation-name:behind;--t:.9s;animation-timing-function:var(--push)}
+.slide.active .light{animation-name:light;--t:.5s}
+.slide.active .zoom{animation-name:zoom;--t:1.1s;animation-timing-function:cubic-bezier(.2,.9,.2,1)}
+.slide.active .track{animation-name:track;--t:1.2s;animation-timing-function:cubic-bezier(.2,.9,.2,1)}
+.slide.active .fall{animation-name:fall;--t:1s;animation-timing-function:cubic-bezier(.4,0,.6,1.35)}
+@keyframes wipeR{from{opacity:1;clip-path:inset(0 100% 0 0)}to{opacity:1;clip-path:inset(-60%)}}
+@keyframes wipeL{from{opacity:1;clip-path:inset(0 0 0 100%)}to{opacity:1;clip-path:inset(-60%)}}
+@keyframes wipeU{from{opacity:1;clip-path:inset(100% 0 0 0)}to{opacity:1;clip-path:inset(-60%)}}
+@keyframes wipeD{from{opacity:1;clip-path:inset(0 0 100% 0)}to{opacity:1;clip-path:inset(-60%)}}
+@keyframes iris{from{opacity:1;clip-path:circle(0% at var(--ix,50%) var(--iy,50%))}to{opacity:1;clip-path:circle(150% at var(--ix,50%) var(--iy,50%))}}
+@keyframes shutT{from{opacity:1;transform:translateY(-100%)}to{opacity:1;transform:none}}
+@keyframes shutB{from{opacity:1;transform:translateY(100%)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes stamp{0%{opacity:0;transform:scale(1.7) rotate(calc(var(--r,0deg) - 8deg))}100%{opacity:1;transform:scale(1) rotate(var(--r,0deg))}}
+@keyframes pop{0%{opacity:0;transform:scale(.1) rotate(-25deg)}100%{opacity:1;transform:scale(1) rotate(var(--r,0deg))}}
+@keyframes hang{0%{opacity:0;transform:translateY(-70px) rotate(-6deg)}100%{opacity:1;transform:none}}
+@keyframes flip{0%{opacity:0;transform:perspective(1400px) rotateX(-95deg)}30%{opacity:1}100%{opacity:1;transform:perspective(1400px) rotateX(0)}}
+@keyframes deal{0%{opacity:0;transform:translate(var(--fx,0),700px) rotate(var(--fr,0deg)) scale(.85)}100%{opacity:1;transform:none}}
+@keyframes corner{0%{opacity:0;transform:translate(var(--fx),var(--fy)) rotate(var(--fr,0deg))}100%{opacity:1;transform:none}}
+@keyframes swing{0%{opacity:0;transform:translateY(-120px) rotate(14deg)}25%{opacity:1;transform:rotate(-9deg)}45%{transform:rotate(5deg)}65%{transform:rotate(-2.5deg)}82%{transform:rotate(1deg)}100%{opacity:1;transform:rotate(var(--r,0deg))}}
+@keyframes tile{0%{opacity:1;transform:perspective(1200px) rotateY(var(--ty,90deg))}100%{opacity:1;transform:none}}
+@keyframes fromR{from{opacity:0;transform:translateX(160px)}to{opacity:1;transform:none}}
+@keyframes fromL{from{opacity:0;transform:translateX(-160px)}to{opacity:1;transform:none}}
+@keyframes fromT{from{opacity:0;transform:translateY(-200px)}to{opacity:1;transform:none}}
+@keyframes fromB{from{opacity:0;transform:translateY(200px)}to{opacity:1;transform:none}}
+@keyframes behind{from{opacity:1;transform:translateX(-340px);clip-path:inset(0 0 0 340px)}to{opacity:1;transform:none;clip-path:inset(-60%)}}
+@keyframes light{from{opacity:.18;transform:scale(.9)}60%{opacity:1;transform:scale(1.1)}to{opacity:1;transform:none}}
+@keyframes zoom{from{opacity:0;transform:scale(1.9)}to{opacity:1;transform:none}}
+@keyframes track{from{opacity:0;letter-spacing:.5em}to{opacity:1;letter-spacing:.005em}}
+@keyframes fall{0%{opacity:1;transform:translateY(-700px)}100%{opacity:1;transform:rotate(var(--r,0deg))}}
+.stamp,.pop,.swing,.fall{transform:rotate(var(--r,0deg))}
+.light{opacity:.18}
+
+/* headline lines rise out of a mask (variants per slide) */
+.ln{display:block;overflow:hidden;padding-bottom:.05em;margin-bottom:-.05em}
+.ln>span{display:block;transform:translateY(108%)}
+.ln.dn>span{transform:translateY(-108%)}
+.ln.sd>span{transform:translateX(-104%)}
+.slide.active .ln>span{animation:lnIn calc(.85s*var(--kt)) var(--out) calc(var(--d,0s)*var(--k) + var(--b,.2s)) forwards}
+@keyframes lnIn{to{transform:none}}
+/* word-by-word */
+.wd{display:inline-block;opacity:0;transform:translateY(40px) scale(.7)}
+.slide.active .wd{animation:wd calc(.55s*var(--kt)) var(--spring) calc(var(--d,0s)*var(--k) + var(--b,.2s)) forwards}
+@keyframes wd{to{opacity:1;transform:none}}
+/* marker swipe behind key phrases */
+.mark{background:linear-gradient(var(--mc,var(--gold)),var(--mc,var(--gold))) 0 88%/0% 38% no-repeat;padding:0 .1em}
+.slide.active .mark{animation:mark calc(.7s*var(--kt)) var(--push) calc(var(--d,0s)*var(--k) + var(--b,.2s)) forwards}
+@keyframes mark{to{background-size:100% 38%}}
+/* ink lines draw on */
+.draw{stroke-dasharray:1;stroke-dashoffset:1}
+.slide.active .draw{animation:draw calc(var(--t,1s)*var(--kt)) var(--push) calc(var(--d,0s)*var(--k) + var(--b,.2s)) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* revisiting a slide: show it finished, no replay (loops keep going) */
+.slide.seen *:not(.loop){animation-duration:1ms!important;animation-delay:0ms!important;transition:none!important}
+
+/* ================= motion v2 (slides with .m2): cinematic entrances + content loops ================= */
+:root{--expo:cubic-bezier(.16,1,.3,1)}
+.slide{--L0:1.6s} .slide.seen{--L0:0s}
+/* camera settle */
+.slide.m2>.fg{scale:1.03} .slide.m2.active>.fg{scale:1;transition:scale .9s var(--expo)}
+/* one easing curve */
+.slide.m2.active .a{animation-timing-function:var(--expo)}
+/* kinetic headlines: characters rise out of the mask, blurred -> crisp */
+.ln{white-space:nowrap} .ch{display:inline-block}
+.slide.m2 .ln>span{transform:none}
+.slide.m2.active .ln>span{animation:none}
+.slide.m2 .ch{opacity:0;transform:translateY(105%) skewY(7deg);filter:blur(7px)}
+.slide.m2 .ln.dn .ch{transform:translateY(-105%) skewY(-7deg)}
+.slide.m2.active .ch{animation:chIn calc(.7s*var(--kt)) var(--expo) calc(var(--d,0s)*var(--k) + var(--b,.2s) + var(--i)*15ms) forwards}
+@keyframes chIn{to{opacity:1;transform:none;filter:none}}
+/* fast moves carry motion blur */
+.slide.m2.active .from-b{animation-name:mFromB} .slide.m2.active .from-r{animation-name:mFromR}
+.slide.m2.active .fall{animation-name:mFall} .slide.m2.active .zoom{animation-name:mZoom}
+@keyframes mFromB{from{opacity:0;transform:translateY(220px);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
+@keyframes mFromR{from{opacity:0;transform:translateX(220px);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
+@keyframes mFall{from{opacity:1;transform:translateY(-760px) rotate(var(--r,0deg));filter:blur(10px)}to{opacity:1;transform:rotate(var(--r,0deg));filter:none}}
+@keyframes mZoom{from{opacity:0;transform:scale(1.35);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
+/* land: arrives at the end of its line with a tight squash */
+.land{transform-box:fill-box;transform-origin:50% 50%}
+.slide.m2.active .land{animation-name:land;--t:.6s;animation-timing-function:ease-out}
+@keyframes land{0%{opacity:0;transform:scale(.45);filter:blur(6px)}55%{opacity:1;transform:scale(1.07,.93);filter:none}78%{transform:scale(.98,1.02)}100%{opacity:1;transform:none}}
+/* curtain photo reveal: accent panel covers, then retracts; image counter-zooms */
+.ph .cv,.ph .curtain{position:absolute;inset:0;z-index:3;pointer-events:none}
+.ph .cv{background:var(--cream);opacity:0} .ph .curtain{background:var(--cc,var(--ink));clip-path:inset(0 0 100% 0)}
+.slide.m2.active .ph .cv{animation:cv 1s linear calc(var(--b,.2s) + .25s) both}
+.slide.m2.active .ph .curtain{animation:var(--cu,cuUp) 1s linear calc(var(--b,.2s) + .25s) both}
+@keyframes cv{0%,44%{opacity:1}45%,100%{opacity:0}}
+@keyframes cuUp{0%{clip-path:inset(100% 0 0 0);animation-timing-function:cubic-bezier(.7,0,.3,1)}45%,55%{clip-path:inset(0)}55%{animation-timing-function:cubic-bezier(.7,0,.3,1)}100%{clip-path:inset(0 0 100% 0)}}
+@keyframes cuSide{0%{clip-path:inset(0 100% 0 0);animation-timing-function:cubic-bezier(.7,0,.3,1)}45%,55%{clip-path:inset(0)}55%{animation-timing-function:cubic-bezier(.7,0,.3,1)}100%{clip-path:inset(0 0 0 100%)}}
+@keyframes cuCirc{0%{clip-path:circle(0% at 50% 50%);animation-timing-function:cubic-bezier(.7,0,.3,1)}45%,55%{clip-path:circle(80% at 50% 50%)}55%{animation-timing-function:cubic-bezier(.7,0,.3,1)}100%{clip-path:circle(0% at 50% 50%)}}
+.kb{position:absolute;inset:0}
+.slide.m2.active .kb{animation-name:push;animation-duration:14s;animation-timing-function:ease-in-out;animation-direction:alternate}
+@keyframes push{to{transform:scale(1.07)}}
+.slide.m2 .ph img{transform:scale(1.2)}
+.slide.m2.active .ph img{transform:scale(1);transition:transform 1.4s var(--expo) calc(var(--b,.2s) + .7s)}
+/* odometer digits */
+.odo{display:inline-block;height:.9em;overflow:hidden;vertical-align:top}
+.odo>span{display:block;line-height:.9em;text-align:center}
+.slide.active .odo>span{animation:odo calc(1.3s*var(--kt)) var(--expo) calc(var(--d,0s)*var(--k) + var(--b,.2s) + var(--j)*70ms) both}
+@keyframes odo{from{transform:none}to{transform:translateY(calc(var(--n)*-5%))}}
+
+/* ---- loops: calm, content-driven; .loop is exempt from the no-replay rule; export shows the base frame ---- */
+.loop{pointer-events:none}
+.slide.active .loop{animation-delay:calc(var(--L0) + var(--ld,0s));animation-iteration-count:infinite}
+.ripple{position:absolute;border-radius:50%;border:5px solid var(--rc,var(--ink));opacity:0}
+.slide.active .ripple{animation-name:ripple;animation-duration:var(--lp,4s);animation-timing-function:var(--expo)}
+@keyframes ripple{0%{opacity:.9;transform:scale(1)}24%,100%{opacity:0;transform:scale(1.5)}}
+/* 03 blood: a red cell walks the donor path; the ECG runs */
+.cell{position:absolute;width:28px;height:28px;border-radius:50%;background:var(--blood);border:4px solid var(--ink);opacity:0}
+.slide.active .cell{animation-name:donor;animation-duration:4s;animation-timing-function:linear}
+@keyframes donor{0%{opacity:0;transform:translateX(0)}5%{opacity:1}80%{opacity:1;transform:translateX(795px)}88%,100%{opacity:0;transform:translateX(795px)}}
+.badge svg.ecg{position:absolute;left:17%;top:17%;stroke:var(--cream);stroke-width:5}
+.ecg path{stroke-dasharray:.28 1;stroke-dashoffset:1.28;opacity:0}
+.slide.active .ecg path{animation-name:ecg;animation-duration:1.6s;animation-timing-function:linear}
+@keyframes ecg{0%{opacity:1;stroke-dashoffset:1.28}100%{opacity:1;stroke-dashoffset:0}}
+/* 04 blood: the drop beats; cells flow down the three branches */
+.beat{transform-origin:95px 140px}
+.slide.active .beat{animation-name:beat;animation-duration:2.4s;animation-timing-function:ease-out}
+@keyframes beat{0%{transform:none}7%{transform:scale(1.1)}15%{transform:none}23%{transform:scale(1.06)}32%,100%{transform:none}}
+.flow{position:absolute;left:120px;top:440px;width:20px;height:20px;border-radius:50%;border:3px solid var(--ink);offset-rotate:0deg;offset-anchor:50% 50%;offset-distance:0%;opacity:0}
+.slide.active .flow{animation-name:flow;animation-duration:2.4s;animation-timing-function:cubic-bezier(.45,0,.55,1)}
+@keyframes flow{0%{offset-distance:0%;opacity:0}8%{opacity:1}82%{opacity:1}96%,100%{offset-distance:100%;opacity:0}}
+/* 07 langar: seva goes round the circle; steam rises */
+.orbit{position:absolute;left:120px;top:440px;width:34px;height:34px;border-radius:50%;background:var(--cream);border:5px solid var(--ink);offset-path:path('M270 80A170 170 0 1 1 269.9 80');offset-rotate:0deg;offset-anchor:50% 50%;opacity:0}
+.slide.active .orbit{animation-name:orbit;animation-duration:8s;animation-timing-function:linear}
+@keyframes orbit{0%{opacity:1;offset-distance:0%}100%{opacity:1;offset-distance:100%}}
+.stepglow{position:absolute;left:1272px;width:540px;height:94px;background:rgba(248,241,226,.55);border-left:8px solid var(--ink);opacity:0}
+.slide.active .stepglow{animation-name:stepglow;animation-duration:8s;animation-timing-function:ease-in-out}
+@keyframes stepglow{0%{opacity:0}4%,22%{opacity:1}27%,100%{opacity:0}}
+.steam{position:absolute;width:14px;height:34px;opacity:0}
+.slide.active .steam{animation-name:steam;animation-duration:2.4s;animation-timing-function:ease-out}
+@keyframes steam{0%{opacity:0;transform:translateY(8px)}30%{opacity:.9}100%{opacity:0;transform:translateY(-34px)}}
+/* 11 unity run: the runner keeps lapping; flag waves; dawn glint */
+.badge .wave{display:grid;width:66%;height:66%;transform-origin:16% 50%} .badge .wave svg{width:100%;height:100%}
+.slide.active .wave{animation-name:wave;animation-duration:2.2s;animation-timing-function:ease-in-out;animation-direction:alternate}
+@keyframes wave{from{transform:skewY(-5deg) scaleX(.95)}to{transform:skewY(4deg) scaleX(1)}}
+.blk.glint{filter:none;background:linear-gradient(100deg,transparent 0,rgba(233,185,58,.0) 30%,rgba(233,185,58,.32) 50%,rgba(233,185,58,0) 70%,transparent 100%);opacity:0}
+.slide.active .glint{animation-name:glint;animation-duration:7s;animation-timing-function:cubic-bezier(.45,0,.55,1)}
+@keyframes glint{0%{opacity:1;transform:translateX(-700px)}60%,100%{opacity:1;transform:translateX(2100px)}}
+
+/* ---- v2 entrance mappings for the rest of the deck ---- */
+.slide.m2.active .pop,.slide.m2.active .light{animation-name:land;animation-timing-function:ease-out;--t:.6s}
+@keyframes land{0%{opacity:0;transform:scale(.45) rotate(var(--r,0deg));filter:blur(6px)}55%{opacity:1;transform:scale(1.07,.93) rotate(var(--r,0deg));filter:none}78%{transform:scale(.98,1.02) rotate(var(--r,0deg))}100%{opacity:1;transform:rotate(var(--r,0deg))}}
+.slide.m2.active .swing{animation-timing-function:ease-out}
+.slide.m2.active .from-l{animation-name:mFromL} .slide.m2.active .from-t{animation-name:mFromT}
+@keyframes mFromL{from{opacity:0;transform:translateX(-220px);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
+@keyframes mFromT{from{opacity:0;transform:translateY(-220px);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
+.slide.m2 .wd{filter:blur(8px)} .slide.m2.active .wd{animation-name:wdB;animation-timing-function:var(--expo)}
+@keyframes wdB{to{opacity:1;transform:none;filter:none}}
+.slide.m2.active .track{animation-name:trackB}
+@keyframes trackB{from{opacity:0;letter-spacing:.4em;filter:blur(10px)}to{opacity:1;letter-spacing:.005em;filter:none}}
+/* living icons (the svg inside a badge/chip loops; the badge itself does the entrance) */
+.slide.active .ic-spark{animation-name:twinkle;animation-duration:2.6s;animation-timing-function:var(--expo)}
+@keyframes twinkle{0%{transform:none}18%{transform:scale(1.18) rotate(18deg)}40%,100%{transform:none}}
+.slide.active .ic-breathe{animation-name:breathe;animation-duration:3.6s;animation-timing-function:ease-in-out;animation-direction:alternate}
+@keyframes breathe{from{transform:scale(.94)}to{transform:scale(1.06)}}
+.slide.active .ic-sway{transform-origin:50% 92%;animation-name:sway;animation-duration:2.6s;animation-timing-function:ease-in-out;animation-direction:alternate}
+@keyframes sway{from{transform:rotate(-7deg)}to{transform:rotate(7deg)}}
+.slide.active .ic-beat{animation-name:beat2;animation-duration:2.4s;animation-timing-function:ease-out}
+@keyframes beat2{0%{transform:none}7%{transform:scale(1.14)}15%{transform:none}23%{transform:scale(1.08)}32%,100%{transform:none}}
+.slide.active .ic-spin{animation-name:spin;animation-duration:14s;animation-timing-function:linear}
+@keyframes spin{to{transform:rotate(360deg)}}
+.slide.active .ic-bob{animation-name:bob;animation-duration:2.2s;animation-timing-function:ease-in-out;animation-direction:alternate}
+@keyframes bob{from{transform:translateY(3px)}to{transform:translateY(-4px)}}
+.slide.active .ic-scan{animation-name:scan;animation-duration:3.2s;animation-timing-function:ease-in-out}
+@keyframes scan{0%,100%{transform:none}25%{transform:translate(-4px,-3px) rotate(-8deg)}60%{transform:translate(4px,2px) rotate(6deg)}}
+/* travellers on a path (title, threads) */
+.trav{position:absolute;border-radius:50%;border:4px solid var(--ink);offset-rotate:0deg;offset-anchor:50% 50%;offset-distance:0%;opacity:0}
+.slide.active .trav{animation-name:trav;animation-duration:var(--lp,6s);animation-timing-function:cubic-bezier(.45,0,.55,1)}
+@keyframes trav{0%{offset-distance:0%;opacity:0}6%{opacity:1}80%{opacity:1}86%,100%{offset-distance:100%;opacity:0}}
+/* 02 overview: a playhead runs the hours bar */
+.playhead{position:absolute;left:120px;top:466px;width:8px;height:138px;background:var(--ink);opacity:0}
+.slide.active .playhead{animation-name:playhead;animation-duration:7s;animation-timing-function:linear}
+@keyframes playhead{0%{opacity:0;transform:none}4%{opacity:1}88%{opacity:1;transform:translateX(1672px)}94%,100%{opacity:0;transform:translateX(1672px)}}
+/* 06: warm glow + the virtuous circle */
+.warm{position:absolute;border-radius:40px;background:radial-gradient(closest-side,rgba(233,185,58,.95) 55%,rgba(233,185,58,0));opacity:0}
+.slide.active .warm{animation-name:warm;animation-duration:3s;animation-timing-function:ease-in-out;animation-direction:alternate}
+@keyframes warm{from{opacity:.25;transform:scale(.97)}to{opacity:1;transform:scale(1.04)}}
+.slide.active .cycle{animation-name:spin;animation-duration:6s;animation-timing-function:linear}
+/* 08: the bowl serves down the pangat row */
+.server{position:absolute;left:157px;top:522px;width:60px;height:60px}
+.slide.active .server{animation-name:serve;animation-duration:8.4s;animation-timing-function:var(--expo)}
+.server{opacity:0}
+@keyframes serve{0%{opacity:0;transform:none}2%{opacity:1}3.50%{transform:translate(0px,0)}6.00%{transform:translate(0px,12px)}8.50%{transform:translate(0px,0)}17.79%{transform:translate(150px,0)}20.29%{transform:translate(150px,12px)}22.79%{transform:translate(150px,0)}32.07%{transform:translate(300px,0)}34.57%{transform:translate(300px,12px)}37.07%{transform:translate(300px,0)}46.36%{transform:translate(450px,0)}48.86%{transform:translate(450px,12px)}51.36%{transform:translate(450px,0)}60.64%{transform:translate(600px,0)}63.14%{transform:translate(600px,12px)}65.64%{transform:translate(600px,0)}74.93%{transform:translate(750px,0)}77.43%{transform:translate(750px,12px)}79.93%{transform:translate(750px,0)}89.21%{transform:translate(900px,0)}91.71%{transform:translate(900px,12px)}94.21%{transform:translate(900px,0)}97%{opacity:1}100%{opacity:0;transform:translate(900px,0)}}
+/* 09: giver <-> receiver */
+.slide.active .swap{animation-name:swap;animation-duration:4s;animation-timing-function:var(--expo)}
+@keyframes swap{0%{transform:none}40%,50%{transform:rotate(180deg)}90%,100%{transform:rotate(360deg)}}
+/* 12: everyone moving; the ground runs */
+.slide.active .bob{animation-name:bob;animation-duration:.5s;animation-timing-function:ease-in-out;animation-direction:alternate}
+.ground{stroke-dasharray:6 34}
+.slide.active .ground{animation-name:ground;animation-duration:1.2s;animation-timing-function:linear}
+@keyframes ground{to{stroke-dashoffset:40}}
+/* 16/17/18: things hang, drift, float */
+.hold{position:absolute}
+.slide.active .sway{animation-name:pinSway;animation-duration:4.4s;animation-timing-function:ease-in-out;animation-direction:alternate}
+@keyframes pinSway{from{transform:rotate(-.9deg)}to{transform:rotate(.9deg)}}
+.slide.active .drift{animation-name:drift;animation-duration:5s;animation-timing-function:ease-in-out;animation-direction:alternate}
+@keyframes drift{from{transform:translateY(calc(var(--dy,1)*-9px))}to{transform:translateY(calc(var(--dy,1)*9px))}}
+.slide.active .float{animation-name:float;animation-duration:3s;animation-timing-function:ease-in-out;animation-direction:alternate}
+@keyframes float{from{transform:translateY(-8px) rotate(-2deg)}to{transform:translateY(8px) rotate(2deg)}}
+
+/* ---------- type ---------- */
+.disp{font-family:var(--display);font-weight:400;text-transform:uppercase;line-height:.9;letter-spacing:.005em}
+.lbl{font:700 24px/1 var(--body);letter-spacing:.1em;text-transform:uppercase}
+.body{font:450 27px/1.38 var(--body)}
+.cite{font:600 17px/1.35 var(--body);letter-spacing:.02em;color:var(--ink-2)}
+.cite b{color:var(--ink)}
+.abs{position:absolute}
+
+/* ---------- components ---------- */
+.badge{position:absolute;display:grid;place-items:center;width:var(--s,150px);height:var(--s,150px);border-radius:50%;background:var(--cream);border:5px solid var(--ink);box-shadow:var(--sh,8px) var(--sh,8px) 0 var(--ink)}
+.badge.rel{position:relative;flex:none}
+.badge svg{width:66%;height:66%;overflow:visible;fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.frame{position:absolute;background:var(--cream);border:5px solid var(--ink);padding:12px;box-shadow:12px 12px 0 var(--ink)}
+.ph{position:relative;overflow:hidden;background:#D9CDB4}
+.ph img,.ph video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.12)}
+.ph.contain img{object-fit:contain;background:var(--cream);transform:none}
+.slide.active .ph img{transition:transform 7s cubic-bezier(.2,.6,.2,1);transform:scale(1)}
+.ph.missing{background:radial-gradient(circle,rgba(28,24,20,.2) 2.2px,transparent 2.6px) 0 0/16px 16px,#E2D6BE;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.ph.missing::before{content:"ADD PHOTO";font:800 22px/1 var(--body);letter-spacing:.16em;background:var(--ink);color:var(--cream);padding:9px 14px}
+.ph.missing.cert::before{content:"ADD CERTIFICATE"}
+.ph.missing.vid::before{content:"ADD VIDEO"}
+.ph.missing::after{content:attr(data-label);font:600 23px/1.25 var(--body);color:var(--ink-2);max-width:82%}
+.tab{position:absolute;left:-5px;top:-52px;padding:12px 18px 10px;color:var(--cream);background:var(--tc,var(--ink));font:800 22px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;border:5px solid var(--ink);border-bottom:0}
+.tag{position:absolute;left:12px;bottom:12px;padding:10px 14px 8px;color:var(--cream);background:var(--tc,var(--ink));font:800 20px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;z-index:2}
+.panel{position:absolute;background:var(--cream);border:5px solid var(--ink);box-shadow:12px 12px 0 var(--ink);overflow:hidden}
+.panel .hd{display:flex;align-items:center;gap:14px;padding:16px 22px;color:var(--cream);background:var(--pc)}
+.research{background:color-mix(in srgb,var(--pc) 13%,var(--cream));border-top:4px solid var(--ink);padding:20px 24px}
+.research .rs{font:800 16px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--pc);margin-bottom:10px}
+.research p{font:450 22px/1.36 var(--body)}
+.research .cite{margin-top:10px}
+
+/* ---------- activity slides (did / impact / learned / research) ---------- */
+.tracker{position:absolute;top:60px;display:flex;gap:8px;z-index:5}
+.tracker span{display:flex;align-items:center;height:46px;padding:0 16px;font:800 16px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;background:var(--cream);color:rgba(28,24,20,.42);border:4px solid var(--ink);white-space:nowrap}
+.tracker span.act{background:var(--ink);color:var(--cream)}
+.tracker span.done{color:var(--ink)}
+.tracker span.on{background:var(--tc);color:var(--tt,var(--cream))}
+/* stat-first cards: small label → big Anton phrase → one line (→ "Us" tie-in) */
+.big{font-family:var(--display);font-weight:400;text-transform:uppercase;line-height:.92;letter-spacing:.005em}
+.slide .k{font:800 15px/1.2 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-2)}
+.tk{font:500 22px/1.34 var(--body);margin-top:8px}
+.us{font:500 20px/1.32 var(--body);margin-top:8px}
+.us b{font-weight:800;font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--uc,var(--pc,var(--ink)));margin-right:10px}
+.lcard{position:absolute;width:1060px;height:150px;display:flex;gap:28px;align-items:center;padding:0 30px;background:var(--cream);border:5px solid var(--ink);border-left:18px solid var(--pc);box-shadow:10px 10px 0 var(--ink);transform-origin:50% 0}
+.lcard .big{font-size:50px;margin-top:6px}
+.lcard .tk{font-size:21px;margin-top:6px;color:var(--ink-2)}
+.chip{display:inline-flex;align-items:center;gap:10px;padding:10px 16px 9px;font:800 18px/1 var(--body);letter-spacing:.1em;text-transform:uppercase}
+.chip svg,.scard .hd svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
+.scard{position:absolute;width:515px;height:400px;display:flex;flex-direction:column;background:var(--cream);border:5px solid var(--ink);box-shadow:10px 10px 0 var(--ink)}
+.scard .hd{display:flex;align-items:center;gap:12px;padding:12px 20px;background:var(--pc);color:var(--cream);font:800 17px/1 var(--body);letter-spacing:.12em;text-transform:uppercase}
+.scard .bd{flex:1;display:flex;flex-direction:column;padding:22px 26px 22px}
+.scard .big{font-size:78px;color:var(--pc)}
+.scard .tk{margin-top:12px;font-size:23px}
+.scard .cite{margin-top:8px}
+.scard .us{margin-top:auto;padding-top:14px;border-top:3px solid var(--ink)}
+.lq{position:absolute;width:520px;height:250px;padding:30px;display:flex;gap:22px;align-items:flex-start}
+.lq .k{color:inherit;opacity:.75}
+.lq .big{font-size:54px;margin-top:8px}
+.lq .tk{font-size:21px;margin-top:8px}
+.pill{position:absolute;left:120px;width:380px;height:120px;display:flex;align-items:center;gap:18px;padding:0 22px}
+.pill .disp{font-size:34px;line-height:.95}
+.rcard{position:absolute;left:650px;width:570px;height:150px;padding:14px 22px;background:var(--cream);border:5px solid var(--ink);border-left:14px solid var(--pc);box-shadow:8px 8px 0 var(--ink)}
+.rcard .big{font-size:42px;margin-top:6px}
+.rcard .us{font-size:19px;margin-top:6px}
+.col{position:absolute;top:430px;width:330px;height:510px;background:var(--cream);border:5px solid var(--ink);box-shadow:10px 10px 0 var(--ink)}
+.col .hd{display:flex;align-items:center;gap:16px;padding:18px 20px;background:var(--pc);color:var(--tt,var(--cream))}
+.col .lbl{font-size:20px}
+.col .bd{padding:26px 24px}
+.col .big{font-size:62px}
+.col .tk{font-size:23px;margin-top:16px;color:var(--ink-2)}
+.rblock{position:absolute;left:120px;width:1060px;height:215px;display:flex;gap:28px;align-items:center;padding:0 30px 0 20px;background:var(--cream);border:5px solid var(--ink);border-left:16px solid var(--pc);box-shadow:10px 10px 0 var(--ink)}
+.rblock>.big{flex:none;width:250px;text-align:center;font-size:118px;color:var(--pc)}
+.rblock .tk{font-size:23px;margin-top:8px}
+
+/* chrome */
+.speaker{position:absolute;left:0;bottom:42px;z-index:40;padding:10px 20px 8px 60px;background:var(--ink);color:var(--cream);font:800 20px/1 var(--body);letter-spacing:.16em}
+.speaker .dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--c);margin-right:10px;vertical-align:1px}
+.folio{position:absolute;right:60px;bottom:46px;z-index:40;font:800 20px/1 var(--body);letter-spacing:.16em;color:var(--fc,var(--ink-2))}
+.notes{display:none}
+#hint{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);font:600 13px/1 var(--body);color:rgba(255,255,255,.5);letter-spacing:.1em;transition:opacity 1s;pointer-events:none}
+body.static #hint{display:none}
+body.static .slide *{animation-duration:1ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;transition:none!important}
+
+/* presenter window */
+#presenter{display:none;position:fixed;inset:0;background:#15120f;color:var(--cream);padding:36px 44px;grid-template-columns:1fr 380px;gap:36px}
+body.presenter #viewport,body.presenter #hint{display:none}
+body.presenter #presenter{display:grid}
+#presenter .k{font:800 15px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;opacity:.6}
+#presenter h1{font:400 48px/1 var(--display);text-transform:uppercase;margin:14px 0 24px}
+#pnotes{font:450 30px/1.5 var(--body);max-width:62ch}
+#presenter .side{border-left:1px solid rgba(255,255,255,.15);padding-left:32px;display:flex;flex-direction:column;gap:26px}
+#ptimer{font:400 84px/1 var(--display)}
+#ptimer.over{color:#ff6b5e}
+#presenter .small{font-size:16px;opacity:.7;line-height:1.5}
+
+/* ================= game layer: levels, taps, HUD, map, evidence, edit mode ================= */
+.folio{display:none}
+/* step change inside a level: the board stays, the content swaps */
+.st-in{z-index:2;animation:stIn .38s var(--expo) both}
+.st-out>.fg,.st-out>.bg{animation:stOut .3s ease-in forwards}
+@keyframes stIn{from{opacity:0}to{opacity:1}}
+@keyframes stOut{to{opacity:0;transform:translateY(-18px)}}
+/* tap-to-reveal groups */
+.slide [data-tap]{--b:0s;--L0:.6s}
+body:not(.static) [data-tap]:not(.on){visibility:hidden}
+body:not(.static) [data-tap]:not(.on),body:not(.static) [data-tap]:not(.on) *{animation-name:none!important}
+[data-untap]{transition:opacity .25s,transform .35s var(--expo)}
+#cue{position:absolute;z-index:4;width:150px;height:150px;margin:-75px 0 0 -75px;padding:0;border:0;border-radius:50%;background:rgba(233,185,58,.16);cursor:pointer;opacity:0}
+#cue.show{animation:cueIn .35s var(--expo) var(--cd,.9s) both}
+#cue[hidden]{display:none}
+#cue::before,#cue::after{content:"";position:absolute;inset:0;border-radius:50%;border:6px solid var(--gold);animation:cue 1.6s var(--expo) infinite}
+#cue::after{animation-delay:.8s}
+#cue b{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);white-space:nowrap;padding:10px 14px 9px;background:var(--ink);color:var(--gold);border:3px solid var(--gold);font:800 17px/1 var(--body);letter-spacing:.16em;text-transform:uppercase}
+@keyframes cue{0%{transform:scale(.5);opacity:1}100%{transform:scale(1.3);opacity:0}}
+@keyframes cueIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+/* runner on the Unity Run route */
+.slide.active .runner{animation:travel calc(1.6s*var(--kt)) linear calc(var(--b,.2s) + .4s*var(--k)) forwards,lap 6s linear var(--L0) infinite}
+.slide.active.seen .runner{animation:lap 6s linear 0s infinite}
+@keyframes travel{0%{opacity:1;offset-distance:0%}97%{opacity:1}100%{opacity:0;offset-distance:100%}}
+@keyframes lap{0%{opacity:0;offset-distance:0%}3%,95%{opacity:1}100%{opacity:0;offset-distance:100%}}
+body.static .runner{display:none}
+/* chunky buttons */
+.go{position:relative;display:inline-flex;align-items:center;height:84px;padding:0 34px;font:400 44px/1 var(--display);text-transform:uppercase;letter-spacing:.02em;border:5px solid var(--ink);box-shadow:8px 8px 0 var(--gc,var(--gold));cursor:pointer;transition:transform .08s,box-shadow .08s}
+.go:active{transform:translate(6px,6px);box-shadow:2px 2px 0 var(--gc,var(--gold))}
+/* HUD */
+#hud{position:absolute;inset:0;z-index:5;pointer-events:none;transition:opacity .35s}
+#hud[data-mode=off]{opacity:0}
+#hud[data-mode=off] *{pointer-events:none!important}
+#hud[data-mode=lite] .hsteps{display:none}
+.hlvl{position:absolute;left:120px;top:54px;display:flex;height:50px;border:4px solid var(--ink);background:var(--cream);box-shadow:5px 5px 0 var(--ink);font:800 16px/1 var(--body);letter-spacing:.14em;text-transform:uppercase}
+.hlvl b{display:flex;align-items:center;padding:0 16px;background:var(--lc,var(--ink));color:var(--lt,var(--cream))}
+.hlvl span{display:flex;align-items:center;padding:0 16px;color:var(--ink)}
+.hbtn{pointer-events:auto;cursor:pointer;font:800 16px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;border:4px solid var(--ink);background:var(--cream);color:var(--ink);box-shadow:5px 5px 0 var(--ink);transition:transform .08s,box-shadow .08s,background .2s}
+.hbtn:active{transform:translate(4px,4px);box-shadow:1px 1px 0 var(--ink)}
+.hsteps{position:absolute;left:250px;top:996px;display:flex;gap:10px}
+.hsteps button{height:52px;padding:0 16px;display:flex;align-items:center;gap:8px}
+.hsteps svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:6;stroke-linecap:round;stroke-linejoin:round;display:none;overflow:visible}
+.hsteps .done svg.hck,.hsteps .lock svg.hlk{display:block}
+.hsteps .on{background:var(--lc);color:var(--lt)}
+.hsteps .next{background:var(--gold)}
+.hsteps .lock{color:rgba(28,24,20,.42);border-color:rgba(28,24,20,.42);box-shadow:5px 5px 0 rgba(28,24,20,.22);background:#E4DAC6}
+.hmeter{position:absolute;left:1290px;top:996px;width:330px;height:52px;display:flex;overflow:hidden;border:4px solid var(--ink);background:var(--cream);box-shadow:5px 5px 0 var(--ink)}
+.hmeter i{height:100%;transform-origin:0 50%;transform:scaleX(0);background:var(--c)}
+.hmeter span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.hmeter span b{padding:6px 10px 5px;background:var(--cream);border:3px solid var(--ink);font:800 16px/1 var(--body);letter-spacing:.14em;text-transform:uppercase}
+.hnext{position:absolute;left:1650px;top:988px;height:68px;padding:0 26px;font:400 36px/1 var(--display);letter-spacing:.02em;background:var(--ink);color:var(--cream);box-shadow:6px 6px 0 var(--gold)}
+.hnext:active{box-shadow:1px 1px 0 var(--gold)}
+.shake{animation:shake .4s}
+/* map */
+.node{position:absolute;width:180px;height:180px;margin:-90px 0 0 -90px;cursor:pointer}
+.node .badge{--s:180px;left:0;top:0}
+.node.cur .badge{background:var(--gold)}
+.node.locked{cursor:not-allowed}
+.node.locked .badge{background:#DDD3BF;border-color:rgba(28,24,20,.45);box-shadow:8px 8px 0 rgba(28,24,20,.22)}
+.node.locked .badge svg{opacity:.28;filter:grayscale(1)}
+.lk{position:absolute;right:-8px;bottom:-8px;width:66px;height:66px;border-radius:50%;background:var(--cream);border:4px solid var(--ink);display:grid;place-items:center}
+.lk svg{width:34px;height:34px;fill:none;stroke:var(--ink);stroke-width:6;stroke-linecap:round}
+.ok{position:absolute;right:-16px;top:-16px;width:76px;height:76px;border-radius:50%;background:var(--nc);border:5px solid var(--ink);display:grid;place-items:center;transform:rotate(-8deg)}
+.ok svg{width:58%;height:58%;fill:none;stroke:var(--cream);stroke-linecap:round;stroke-linejoin:round}
+.nlab{position:absolute;width:340px;margin-left:-170px;text-align:center}
+.nlab .lbl{font-size:18px}
+.flag{display:inline-block;width:220px;text-align:center;padding:12px 0 10px;background:var(--ink);color:var(--gold);font:800 18px/1 var(--body);letter-spacing:.14em;text-transform:uppercase}
+.mtrav{position:absolute;left:0;top:0;width:34px;height:34px;border-radius:50%;background:var(--gold);border:5px solid var(--ink);offset-anchor:50% 50%;offset-rotate:0deg;offset-distance:0%;opacity:0}
+.slide.active .mtrav{animation:mtrav calc(1.3s*var(--kt)) var(--expo) calc(var(--d)*var(--k) + var(--b,.2s)) both}
+@keyframes mtrav{0%{opacity:1;offset-distance:0%}90%{opacity:1}100%{opacity:0;offset-distance:100%}}
+/* face-down cards and empty study slots */
+.cardback{display:flex;align-items:center;gap:28px;padding:0 34px;background:repeating-linear-gradient(135deg,rgba(248,241,226,.07) 0 14px,transparent 14px 28px) var(--ink);color:var(--cream);border:5px solid var(--ink);box-shadow:10px 10px 0 var(--ink);transform-origin:50% 50%;transition:transform .22s ease-in,opacity .22s}
+.cardback.tall{flex-direction:column;justify-content:center;text-align:center;gap:10px}
+.cardback .q{font:400 96px/1 var(--display)}
+.cardback .lbl{font-size:26px}
+.cardback small{display:block;margin-top:10px;font:800 14px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:rgba(248,241,226,.6)}
+.slotb{display:flex;align-items:center;justify-content:center;gap:16px;border:4px dashed rgba(28,24,20,.35);font:800 17px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:rgba(28,24,20,.5)}
+.slotb b{font:400 56px/1 var(--display);color:rgba(28,24,20,.4)}
+/* evidence: envelope + photo pile */
+.env{position:relative;width:400px;height:270px;display:flex;flex-direction:column;justify-content:flex-end;padding:0 30px 24px;background:var(--sand);border:5px solid var(--ink);box-shadow:10px 10px 0 var(--ink)}
+.env .flap{position:absolute;left:-5px;top:-5px;width:400px;height:150px;overflow:visible;transform-origin:50% 0;transition:transform .3s ease-in}
+.env .seal{position:absolute;left:155px;top:92px;width:90px;height:90px;border-radius:50%;display:grid;place-items:center;background:var(--ec);border:5px solid var(--ink)}
+.env .seal svg,.pile svg{width:62%;height:62%;fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
+.env small,.pile small{display:block;margin-top:8px;font:800 15px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--ink-2)}
+.pile{position:relative;width:300px;height:420px}
+.pile i{font-style:normal;position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--cream);border:5px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
+.pile i:nth-child(1){transform:rotate(-8deg)} .pile i:nth-child(2){transform:rotate(5deg)} .pile i:nth-child(3){transform:rotate(-1deg)}
+/* level complete rows */
+.srow{display:flex;align-items:center;gap:26px;height:90px;border-bottom:4px solid var(--ink)}
+.srow>b{flex:none;width:170px;height:52px;display:grid;place-items:center;background:var(--rc,var(--ink));color:var(--cream);font:800 17px/1 var(--body);letter-spacing:.16em;text-transform:uppercase}
+.srow>span{font:600 27px/1.2 var(--body)}
+.srow small{display:block;margin-top:4px;font:600 17px/1.3 var(--body);letter-spacing:.02em;color:var(--ink-2)}
+/* edit mode */
+#editbar{position:fixed;left:0;right:0;top:0;z-index:100;display:none;flex-wrap:wrap;align-items:center;gap:14px;padding:10px 18px;background:var(--ink);color:var(--cream);font:500 14px/1.3 var(--body)}
+#editbar>b{color:var(--gold);letter-spacing:.14em}
+body.editing #editbar{display:flex}
+#editbar button{padding:9px 13px;border:3px solid var(--cream);background:var(--gold);color:var(--ink);font:800 13px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+#emsg{color:var(--gold);font-weight:700}
+.eov{display:none}
+body.editing .ph[data-slot]{outline:6px dashed var(--gold);outline-offset:-6px;cursor:grab;pointer-events:auto}
+body.editing .ph[data-slot]:active{cursor:grabbing}
+body.editing .eov{position:absolute;z-index:6;left:12px;right:12px;top:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.eov button{padding:12px 16px;border:4px solid var(--ink);background:var(--gold);color:var(--ink);font:800 20px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+.eov button+button{background:var(--cream)}
+.eov em{font:800 15px/1 var(--body);font-style:normal;letter-spacing:.1em;padding:6px 8px;background:var(--ink);color:var(--cream)}
+.ph.drop{outline:10px solid var(--gold)!important;outline-offset:-10px}
+body.static #hud .hnext{display:none}
+
+.slide i,.slide em,#hud i,#editbar em,.eov em{font-style:normal}
+/* AI placeholders: live deck only, always labelled; export never loads them */
+.ph.ai:not(.missing)::after{content:"AI placeholder";position:absolute;z-index:6;right:12px;top:12px;font:800 13px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;background:var(--cream);color:var(--ink);border:3px solid var(--ink);padding:6px 9px}
+body.static .frame:has(.ph.missing){display:none}
+
+/* ---- content pass: fuller learned / research cards ---- */
+.lcard .big{font-size:44px}
+.lcard .tk{font-size:20px;line-height:1.32;margin-top:6px}
+.lq{padding:24px 26px;gap:18px}
+.lq .big{font-size:44px}
+.lq .tk{font-size:19px;line-height:1.32}
+.col .big{font-size:50px}
+.col .tk{font-size:20px;line-height:1.35;margin-top:14px}
+.scard .big{font-size:66px}
+.scard .tk{font-size:20px;line-height:1.35}
+.scard .us{font-size:19px;line-height:1.35}
+.rrow{position:absolute;left:120px;width:1060px;height:178px;display:flex;background:var(--cream);border:5px solid var(--ink);box-shadow:8px 8px 0 var(--ink)}
+.rrow .st{flex:none;width:272px;display:flex;align-items:center;gap:12px;padding:0 14px;background:var(--pc);color:var(--tc);border-right:5px solid var(--ink)}
+.rrow .st .disp{font-size:25px;line-height:1}
+.rrow .tx{flex:1;min-width:0;padding:12px 22px}
+.rrow .big{font-size:36px;margin-top:4px}
+.rrow .tk{font-size:18px;line-height:1.3;margin-top:4px}
+.rrow .us{font-size:18px;line-height:1.3;margin-top:4px}
+.rblock .tk{font-size:21px;line-height:1.32}
+.rblock .us{font-size:19px;line-height:1.32}
+.rrow .cite{margin-top:0;font-size:15px}
+#hint{top:8px;bottom:auto;background:rgba(28,24,20,.88);color:#F8F1E2;padding:8px 14px;z-index:50}
+.slide.t1 [data-untap="1"]{opacity:0;transform:translateY(16px) scale(.96);pointer-events:none}
+.slide.t2 [data-untap="2"]{opacity:0;transform:translateY(16px) scale(.96);pointer-events:none}
+.slide.t3 [data-untap="3"]{opacity:0;transform:translateY(16px) scale(.96);pointer-events:none}
+.slide.t4 [data-untap="4"]{opacity:0;transform:translateY(16px) scale(.96);pointer-events:none}
+.slide.t5 [data-untap="5"]{opacity:0;transform:translateY(16px) scale(.96);pointer-events:none}
+.slide.t6 [data-untap="6"]{opacity:0;transform:translateY(16px) scale(.96);pointer-events:none}
+.slide.t1 .cardback[data-untap="1"]{transform:perspective(1200px) rotateX(90deg);opacity:0}
+.slide.t2 .cardback[data-untap="2"]{transform:perspective(1200px) rotateX(90deg);opacity:0}
+.slide.t3 .cardback[data-untap="3"]{transform:perspective(1200px) rotateX(90deg);opacity:0}
+.slide.t4 .cardback[data-untap="4"]{transform:perspective(1200px) rotateX(90deg);opacity:0}
+.slide.t5 .cardback[data-untap="5"]{transform:perspective(1200px) rotateX(90deg);opacity:0}
+.slide.t6 .cardback[data-untap="6"]{transform:perspective(1200px) rotateX(90deg);opacity:0}
+.slide.t1 .env[data-untap="1"]{transform:translateY(140px) rotate(6deg);opacity:0} .slide.t1 .env .flap{transform:perspective(600px) rotateX(180deg)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="lino" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="3" seed="11"/><feDisplacementMap in="SourceGraphic" scale="9"/></filter>
+  <symbol id="i-drop" viewBox="0 0 64 64"><path d="M32 4S10 29 10 42a22 22 0 0 0 44 0C54 29 32 4 32 4z" style="fill:var(--blood)"/><path d="M19 40a12 12 0 0 0 5 10" style="stroke:var(--cream)"/><circle cx="26" cy="40" r="2.6" style="fill:var(--ink);stroke:none"/><circle cx="39" cy="40" r="2.6" style="fill:var(--ink);stroke:none"/><path d="M27 48c3 3 8 3 11 0"/></symbol>
+  <symbol id="i-bowl" viewBox="0 0 64 64"><path d="M5 32h54a27 24 0 0 1-54 0z" style="fill:var(--saffron)"/><path d="M5 32h54"/><path d="M22 60h20"/><path d="M22 24c-4-5 4-8 0-15M32 24c-4-5 4-8 0-15M42 24c-4-5 4-8 0-15"/></symbol>
+  <symbol id="i-medal" viewBox="0 0 64 64"><path d="M18 3l8 22h12l8-22h-10l-4 11-4-11z" style="fill:var(--green)"/><circle cx="32" cy="43" r="17" style="fill:var(--gold)"/><path d="M32 34l2.8 5.6 6.2.9-4.5 4.4 1 6.1-5.5-2.9-5.5 2.9 1-6.1-4.5-4.4 6.2-.9z" style="fill:var(--cream)"/></symbol>
+  <symbol id="i-form" viewBox="0 0 64 64"><rect x="12" y="9" width="40" height="51" rx="5" style="fill:var(--cream)"/><rect x="22" y="4" width="20" height="10" rx="3" style="fill:var(--sky)"/><path d="M21 26h22M21 35h22M21 44h12"/><path d="M37 46l4 4 8-9" style="stroke:var(--green)"/></symbol>
+  <symbol id="i-vitals" viewBox="0 0 64 64"><path d="M32 57C13 43 5 33 5 21 5 12 12 6 20 6c6 0 10 4 12 8 2-4 6-8 12-8 8 0 15 6 15 15 0 12-8 22-27 36z" style="fill:var(--pink)"/><path d="M8 31h13l4-8 6 16 5-12 3 4h17"/></symbol>
+  <symbol id="i-cup" viewBox="0 0 64 64"><path d="M10 26h36v13a15 15 0 0 1-15 15h-6A15 15 0 0 1 10 39z" style="fill:var(--saffron)"/><path d="M46 30h4a7 7 0 0 1 0 14h-5"/><path d="M8 60h40"/><path d="M22 18c-3-4 3-6 0-11M33 18c-3-4 3-6 0-11"/></symbol>
+  <symbol id="i-pot" viewBox="0 0 64 64"><path d="M10 28h44v20a9 9 0 0 1-9 9H19a9 9 0 0 1-9-9z" style="fill:var(--saffron)"/><path d="M6 28h52M10 34H4M54 34h6M24 21h16M32 21v-5"/></symbol>
+  <symbol id="i-ladle" viewBox="0 0 64 64"><path d="M52 5L33 33" style="stroke-width:6"/><path d="M8 33h32a16 13 0 0 1-32 0z" style="fill:var(--saffron)"/><path d="M14 54c4 4 8 4 12 0" style="stroke:var(--saffron)"/></symbol>
+  <symbol id="i-pangat" viewBox="0 0 64 64"><path d="M2 56h60"/><circle cx="13" cy="25" r="6" style="fill:var(--cream)"/><circle cx="32" cy="22" r="6" style="fill:var(--cream)"/><circle cx="51" cy="25" r="6" style="fill:var(--cream)"/><path d="M3 52a10 10 0 0 1 20 0z" style="fill:var(--saffron)"/><path d="M22 50a10 10 0 0 1 20 0z" style="fill:var(--blood)"/><path d="M41 52a10 10 0 0 1 20 0z" style="fill:var(--green)"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 64 64"><path d="M32 57C13 43 5 33 5 21 5 12 12 6 20 6c6 0 10 4 12 8 2-4 6-8 12-8 8 0 15 6 15 15 0 12-8 22-27 36z" style="fill:var(--blood)"/><path d="M15 20a7 7 0 0 1 6-6" style="stroke:var(--cream)"/></symbol>
+  <symbol id="i-sign" viewBox="0 0 64 64"><path d="M30 62V6"/><path d="M12 10h32l9 8-9 8H12z" style="fill:var(--gold)"/><path d="M48 32H17l-8 8 8 8h31z" style="fill:var(--sky)"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 64 64"><path d="M10 62V4"/><rect x="12" y="8" width="10" height="28" style="fill:#C8102E"/><rect x="22" y="8" width="34" height="9.3" style="fill:#00843D"/><rect x="22" y="17.3" width="34" height="9.3" style="fill:#fff"/><rect x="22" y="26.6" width="34" height="9.4" style="fill:var(--ink)"/><rect x="12" y="8" width="44" height="28"/></symbol>
+  <symbol id="i-water" viewBox="0 0 64 64"><path d="M25 3h14v8l6 7v38a5 5 0 0 1-5 5H24a5 5 0 0 1-5-5V18l6-7z" style="fill:#9CC7E0"/><path d="M19 32c5-3 9 3 13 0s9-3 13 0"/><path d="M25 3h14"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 64 64"><path d="M28 4c2 15 6 20 20 22-14 2-18 8-20 22-2-14-6-20-20-22 14-2 18-7 20-22z" style="fill:var(--gold)"/><path d="M50 40c1 6 3 8 8 9-5 1-7 3-8 9-1-6-3-8-8-9 5-1 7-3 8-9z" style="fill:var(--cream)"/></symbol>
+  <symbol id="i-mountain" viewBox="0 0 64 64"><path d="M3 58L24 22l10 14 8-12 19 34z" style="fill:var(--sand)"/><path d="M24 22l-6 10 6 3 5-5z" style="fill:var(--cream)"/><path d="M42 24V8l10 4-10 4" style="fill:var(--blood)"/></symbol>
+  <symbol id="i-sprout" viewBox="0 0 64 64"><path d="M32 58V30"/><path d="M32 36C18 36 12 27 12 16c13 0 20 8 20 20z" style="fill:#5FA36F"/><path d="M32 30c0-12 7-20 21-20 0 12-7 20-21 20z" style="fill:#5FA36F"/><path d="M14 58h36"/></symbol>
+  <symbol id="i-kind" viewBox="0 0 64 64"><path d="M32 30c-9-6-13-10-13-15a6.5 6.5 0 0 1 13-2 6.5 6.5 0 0 1 13 2c0 5-4 9-13 15z" style="fill:var(--blood)"/><path d="M4 34c5 0 9 3 11 7l4 7c2 4 6 7 11 7h4c5 0 9-3 11-7l4-7c2-4 6-7 11-7" style="fill:var(--sand)"/></symbol>
+  <symbol id="i-people" viewBox="0 0 64 64"><circle cx="21" cy="20" r="9" style="fill:var(--cream)"/><circle cx="43" cy="20" r="9" style="fill:var(--cream)"/><path d="M5 58a16 16 0 0 1 32 0z" style="fill:var(--saffron)"/><path d="M27 58a16 16 0 0 1 32 0z" style="fill:var(--green)"/></symbol>
+  <symbol id="i-thanks" viewBox="0 0 64 64"><path d="M6 8h52v34H30L16 56V42H6z" style="fill:var(--cream)"/><path d="M32 36c-8-5-12-9-12-13a5.5 5.5 0 0 1 12-2 5.5 5.5 0 0 1 12 2c0 4-4 8-12 13z" style="fill:var(--blood)"/></symbol>
+  <symbol id="i-lotus" viewBox="0 0 64 64"><path d="M32 12c8 9 8 27 0 38-8-11-8-29 0-38z" style="fill:var(--pink)"/><path d="M32 50C20 49 8 40 6 26c13 1 22 10 26 24z" style="fill:var(--saffron)"/><path d="M32 50c12-1 24-10 26-24-13 1-22 10-26 24z" style="fill:var(--saffron)"/><path d="M12 58h40"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 64 64"><circle cx="32" cy="32" r="13" style="fill:var(--gold)"/><path d="M32 4v8M32 52v8M4 32h8M52 32h8M12 12l6 6M46 46l6 6M12 52l6-6M46 18l6-6"/></symbol>
+  <symbol id="i-breath" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" style="fill:#CFE2EE"/><path d="M12 24c5-4 10 4 15 0s10-4 15 0 8 2 10 0M12 34c5-4 10 4 15 0s10-4 15 0 8 2 10 0M16 44c4-3 8 3 12 0s8-3 12 0 6 2 8 0" style="stroke:var(--sky)"/></symbol>
+  <symbol id="i-book" viewBox="0 0 64 64"><path d="M32 14C25 9 14 8 5 10v42c9-2 20-1 27 4 7-5 18-6 27-4V10c-9-2-20-1-27 4z" style="fill:var(--cream)"/><path d="M32 14v42M12 22c5-1 10 0 13 2M12 31c5-1 10 0 13 2M39 24c3-2 8-3 13-2"/></symbol>
+  <symbol id="i-lens" viewBox="0 0 64 64"><circle cx="26" cy="26" r="18" style="fill:#CFE2EE"/><path d="M39 39l18 18" style="stroke-width:7"/><path d="M17 22a10 10 0 0 1 7-6" style="stroke:var(--cream)"/></symbol>
+  <symbol id="i-walk" viewBox="0 0 64 64"><circle cx="32" cy="9" r="6" style="fill:var(--saffron)"/><path d="M32 18l-2 19M30 37l-8 21M30 37l9 21M31 23l-10 11M31 23l11 9" style="stroke-width:5"/><path d="M44 32l4 26" style="stroke:var(--sand);stroke-width:4"/></symbol>
+  <symbol id="i-run" viewBox="0 0 64 64"><circle cx="42" cy="9" r="6" style="fill:var(--blood)"/><path d="M38 18l-7 18M31 36l-12 6-6 12M31 36l13 7v15M37 23l-14 1M37 23l10 11" style="stroke-width:5"/></symbol>
+  <symbol id="i-wheel" viewBox="0 0 64 64"><circle cx="26" cy="9" r="6" style="fill:var(--green)"/><circle cx="25" cy="46" r="14" style="fill:#CFE2EE"/><path d="M26 18v18h15l7 17M26 26h12" style="stroke-width:5"/><circle cx="25" cy="46" r="3" style="fill:var(--ink)"/></symbol>
+  <symbol id="i-baton" viewBox="0 0 64 64"><rect x="8" y="24" width="48" height="16" rx="8" transform="rotate(-30 32 32)" style="fill:var(--gold)"/><path d="M20 46l26-15" style="stroke:var(--cream)"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 64 64"><path d="M32 8v48M20 58h24M8 16h48"/><path d="M8 16L2 34M8 16l6 18M56 16l-6 18M56 16l6 18"/><path d="M1 34h14a7 6 0 0 1-14 0z" style="fill:var(--gold)"/><path d="M49 34h14a7 6 0 0 1-14 0z" style="fill:var(--sky)"/><circle cx="32" cy="9" r="4" style="fill:var(--ink)"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 64 64"><path d="M20 30v-9a12 12 0 0 1 24 0v9"/><rect x="12" y="29" width="40" height="29" rx="4" style="fill:var(--ink)"/><circle cx="32" cy="42" r="4" style="fill:var(--cream);stroke:none"/></symbol>
+  <symbol id="i-check" viewBox="0 0 64 64"><path d="M12 34l13 13 27-29" style="stroke-width:9"/></symbol>
+</defs></svg>
+
+<div id="viewport"><div id="stage">
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Happiness through volunteering" style="--cc:var(--ink);--cu:cuUp">
+  <div class="blk a wipe-l" style="left:1130px;top:-20px;width:830px;height:1120px;background:var(--blood)"></div>
+  <svg class="abs" style="left:1130px;top:0;width:790px;height:1080px" viewBox="0 0 790 1080"><path class="draw" pathLength="1" style="--d:.7s;--t:1.4s" d="M280 250C560 300 650 420 520 520S200 640 300 840" fill="none" stroke="var(--cream)" stroke-width="9" stroke-linecap="round"/></svg>
+  <div class="loop trav" style="left:1130px;top:0;width:38px;height:38px;background:var(--cream);offset-path:path('M280 250C560 300 650 420 520 520S200 640 300 840');--lp:6s"></div>
+  <div class="loop ripple" style="left:1300px;top:120px;width:220px;height:220px;--rc:var(--cream);--lp:6s;--ld:0s"></div>
+  <div class="loop ripple" style="left:1560px;top:410px;width:220px;height:220px;--rc:var(--cream);--lp:6s;--ld:2.5s"></div>
+  <div class="loop ripple" style="left:1320px;top:730px;width:220px;height:220px;--rc:var(--cream);--lp:6s;--ld:5.1s"></div>
+  <div class="badge a pop" style="--s:220px;left:1300px;top:120px;--d:.6s;--r:-6deg"><svg viewBox="0 0 64 64"><use href="#i-drop"/></svg></div>
+  <div class="badge a pop" style="--s:220px;left:1560px;top:410px;--d:.95s;--r:5deg"><svg viewBox="0 0 64 64"><use href="#i-bowl"/></svg></div>
+  <div class="badge a pop" style="--s:220px;left:1320px;top:730px;--d:1.3s;--r:-3deg"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div>
+  <div class="abs lbl a rise" style="left:120px;top:120px;color:var(--ink-2)">Science of Sustainable Happiness — Assignment 2</div>
+  <h1 class="abs disp" style="left:112px;top:190px;font-size:178px"><span class="ln" style="--d:.1s"><span>Happiness</span></span><span class="ln" style="--d:.22s"><span>through</span></span><span class="ln" style="--d:.34s"><span style="color:var(--blood)">volunteering.</span></span></h1>
+  <p class="abs body a rise" style="left:120px;top:780px;font-size:34px;font-weight:500;--d:.8s">11 hours · a blood donation camp · langar seva · the Unity Run</p>
+  <div class="abs a rise" style="left:120px;top:880px;display:flex;gap:18px;align-items:stretch;--d:1s">
+    <div class="pb" style="--c:var(--ink);color:var(--cream);padding:16px 24px 14px"><div class="disp" style="font-size:40px">Tohraan Khan</div><div class="lbl" style="font-size:17px;opacity:.7;margin-top:6px">ID 20250304</div></div>
+    <div class="pb" style="--c:var(--ink);color:var(--cream);padding:16px 24px 14px"><div class="disp" style="font-size:40px">Vedansh Dholakia</div><div class="lbl" style="font-size:17px;opacity:.7;margin-top:6px">ID 20250130</div></div>
+    <div class="lbl" style="align-self:center;font-size:19px;line-height:1.5;color:var(--ink-2)">BITS Pilani, Dubai Campus<br>November 2026</div>
+  </div>
+
+  <div class="abs a land" style="left:1590px;top:870px;--d:1.7s"><button class="go" data-act="next" style="background:var(--cream);color:var(--ink);--gc:var(--ink)">Start ▶</button></div>
+  <aside class="notes">Good morning. I'm Vedansh, and this is Tohraan. Our project: happiness through volunteering.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Overview · start" data-map="0" style="--cc:var(--ink);--cu:cuUp">
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.05s">Overview · where our 11 hours went</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:116px"><span class="ln" style="--d:.1s"><span>Three activities.</span></span><span class="ln" style="--d:.22s"><span style="color:var(--blood)">Eleven hours.</span></span></h2>
+  <svg class="abs" style="left:0;top:0;width:1920px;height:1080px" viewBox="0 0 1920 1080" fill="none" stroke-linecap="round">
+    <path d="M40 900C140 900 230 690 330 690" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M330 690C500 690 600 520 770 520" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M770 520C940 520 1040 700 1210 700" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M1210 700C1380 700 1470 500 1640 500" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M1640 500C1740 500 1800 380 1880 380" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path class="draw" pathLength="1" style="--d:.5s;--t:1.3s" d="M40 900C140 900 230 690 330 690" stroke="var(--ink)" stroke-width="12"/>
+  </svg>
+  <div class="mtrav" style="offset-path:path('M40 900C140 900 230 690 330 690');--d:.5s"></div>
+  <div class="loop ripple" style="left:240px;top:600px;width:180px;height:180px;--rc:var(--blood);--lp:2.2s"></div>
+  <div class="node a land cur" data-act="enter" data-lv="1" style="left:330px;top:690px;--d:2.6s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-drop"/></svg></div></div>
+  <div class="nlab a fade" style="left:330px;top:802px;--d:0.5s"><div class="lbl" style="color:var(--blood)">Activity 1</div><div class="disp" style="font-size:44px;margin-top:6px;">Blood camp</div><div class="cite">01 Oct · 2 hrs</div></div>
+  <div class="abs a hang" style="left:220px;top:512px;--d:3s"><span class="flag">Up next ▼</span></div>
+  <div class="node a land locked" data-act="enter" data-lv="2" style="left:770px;top:520px;--d:0.4s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-bowl"/></svg></div><b class="lk"><svg viewBox="0 0 64 64"><use href="#i-lock"/></svg></b></div>
+  <div class="nlab a fade" style="left:770px;top:632px;--d:0.6s"><div class="lbl" style="color:rgba(28,24,20,.45)">Activity 2</div><div class="disp" style="font-size:44px;margin-top:6px;color:rgba(28,24,20,.45)">Langar seva</div><div class="cite">14 Nov · 1 hr</div></div>
+  <div class="node a land locked" data-act="enter" data-lv="3" style="left:1210px;top:700px;--d:0.5s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div><b class="lk"><svg viewBox="0 0 64 64"><use href="#i-lock"/></svg></b></div>
+  <div class="nlab a fade" style="left:1210px;top:812px;--d:0.7s"><div class="lbl" style="color:rgba(28,24,20,.45)">Activity 3</div><div class="disp" style="font-size:44px;margin-top:6px;color:rgba(28,24,20,.45)">Unity Run</div><div class="cite">15 Nov · 8 hrs</div></div>
+  <div class="node a land locked" data-act="enter" data-lv="4" style="left:1640px;top:500px;--d:0.6000000000000001s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-scale"/></svg></div><b class="lk"><svg viewBox="0 0 64 64"><use href="#i-lock"/></svg></b></div>
+  <div class="nlab a fade" style="left:1640px;top:612px;--d:0.8s"><div class="lbl" style="color:rgba(28,24,20,.45)">Reflection</div><div class="disp" style="font-size:44px;margin-top:6px;color:rgba(28,24,20,.45)">Class vs reality</div><div class="cite">what we re-examined</div></div>
+  <aside class="notes">Eleven hours across three activities: a blood camp, langar seva and a community run.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Blood camp · Start" data-level="1" data-step="0" style="--cc:var(--blood);--cu:cuUp">
+  <div class="blk a wipe-l" style="left:-20px;top:-20px;width:1250px;height:1120px;background:var(--blood)"></div>
+  <div class="frame a zoom" style="left:1272px;top:44px;--d:.45s"><div class="ph" data-slot="blood-intro" data-src="images/blood-1" data-label="images/blood-intro.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--ink)">01 Oct 2026</div></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--cream);--d:.1s">Activity 1 of 3</div>
+  <h1 class="abs disp" style="left:112px;top:200px;font-size:160px;color:var(--cream)"><span class="ln" style="--d:0.15s"><span>Blood</span></span><span class="ln" style="--d:0.27s"><span>Donation</span></span><span class="ln" style="--d:0.39s"><span>Camp</span></span></h1>
+  <div class="abs a rise" style="left:120px;top:690px;display:flex;gap:12px;--d:.75s"><span class="pb" style="--c:var(--cream);color:var(--ink);padding:12px 18px 10px"><span class="lbl" style="font-size:20px">01 Oct 2026</span></span><span class="pb" style="--c:var(--cream);color:var(--ink);padding:12px 18px 10px"><span class="lbl" style="font-size:20px">2 hours</span></span><span class="pb" style="--c:var(--cream);color:var(--ink);padding:12px 18px 10px"><span class="lbl" style="font-size:20px">MAD Club, BITS Pilani Dubai × Dubai Health</span></span></div>
+  <p class="abs body a fade" style="left:120px;top:772px;width:1040px;font-size:30px;font-weight:500;color:var(--cream);--d:.95s"><b>Our role:</b> help donors through the whole process, from forms and check-up booths to refreshments, and donate ourselves.</p>
+  <div class="abs a land" style="left:120px;top:885px;--d:1.2s"><button class="go" data-act="next" style="background:var(--ink);color:var(--cream);--gc:var(--cream)">What we did ▶</button></div>
+  <aside class="notes">First, two hours at a blood donation camp on the first of October, run by our MAD Club with Dubai Health.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Blood camp · Did" data-level="1" data-step="1" style="--cc:var(--blood);--cu:cuUp">
+  <div class="blk a wipe-u" style="left:1180px;top:-20px;width:760px;height:1120px;background:var(--blood)"></div>
+  <div class="frame a from-b" style="left:1272px;top:44px;--d:.45s"><div class="ph" data-slot="blood-did" data-src="images/blood-2" data-label="images/blood-did.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--ink)">At the camp</div></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">What did we do?</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:112px">
+    <span class="ln sd" style="--d:.15s"><span>Every donor,</span></span>
+    <span class="ln sd" style="--d:.27s"><span style="color:var(--blood)">form to refreshments.</span></span>
+  </h2>
+  <div class="abs lbl a fade" style="left:120px;top:470px;color:var(--ink-2);font-size:20px;--d:.5s">The donor's path · we helped fellow volunteers donate, step by step</div>
+  <svg class="abs" style="left:120px;top:520px;width:1060px;height:120px" viewBox="0 0 1060 120"><g fill="none" stroke="var(--ink)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path data-tap="2" class="draw" pathLength="1" style="--d:0s;--t:.35s" d="M140 60h100m-16-14 16 14-16 14"/>
+    <path data-tap="3" class="draw" pathLength="1" style="--d:0s;--t:.35s" d="M405 60h100m-16-14 16 14-16 14"/>
+    <path data-tap="4" class="draw" pathLength="1" style="--d:0s;--t:.35s" d="M670 60h100m-16-14 16 14-16 14"/></g></svg>
+  <div class="loop cell" data-tap="4" style="left:166px;top:566px"></div>
+  <div class="loop ripple" data-tap="1" style="left:120px;top:520px;width:120px;height:120px;--ld:0s"></div>
+  <div class="loop ripple" data-tap="2" style="left:385px;top:520px;width:120px;height:120px;--ld:1.07s"></div>
+  <div class="loop ripple" data-tap="3" style="left:650px;top:520px;width:120px;height:120px;--ld:2.13s;--rc:var(--blood)"></div>
+  <div class="loop ripple" data-tap="4" style="left:915px;top:520px;width:120px;height:120px;--ld:3.2s"></div>
+  <div class="badge a land" data-tap="1" style="--s:120px;left:120px;top:520px;--d:0s"><svg viewBox="0 0 64 64"><use href="#i-form"/></svg></div>
+  <div class="badge a land" data-tap="2" style="--s:120px;left:385px;top:520px;--d:.3s"><svg viewBox="0 0 64 64"><use href="#i-vitals"/></svg><svg class="ecg" viewBox="0 0 64 64"><path class="loop" pathLength="1" style="--ld:.3s" d="M8 31h13l4-8 6 16 5-12 3 4h17"/></svg></div>
+  <div class="badge a land" data-tap="3" style="--s:120px;left:650px;top:520px;--d:.3s;background:var(--blood)"><svg viewBox="0 0 64 64" style="--blood:#F8F1E2;--cream:#C9302C"><use href="#i-drop"/></svg></div>
+  <div class="badge a land" data-tap="4" style="--s:120px;left:915px;top:520px;--d:.3s"><svg viewBox="0 0 64 64"><use href="#i-cup"/></svg></div>
+  <div class="abs a rise" data-tap="1" style="left:120px;top:670px;width:236px;--d:.2s"><div class="disp" style="font-size:34px">1 · Forms</div><p class="body" style="font-size:20px;margin-top:6px">helped donors fill in the registration and screening forms</p></div>
+  <div class="abs a rise" data-tap="2" style="left:385px;top:670px;width:236px;--d:.5s"><div class="disp" style="font-size:34px">2 · Vitals</div><p class="body" style="font-size:20px;margin-top:6px">guided them between the check-up and vitals booths</p></div>
+  <div class="abs a rise" data-tap="3" style="left:650px;top:670px;width:236px;--d:.5s"><div class="disp" style="font-size:34px;color:var(--blood)">3 · Donate</div><p class="body" style="font-size:20px;margin-top:6px">we <b>donated too</b>, both of us, between shifts</p></div>
+  <div class="abs a rise" data-tap="4" style="left:915px;top:670px;width:236px;--d:.5s"><div class="disp" style="font-size:34px">4 · Refuel</div><p class="body" style="font-size:20px;margin-top:6px">ran post-donation refreshments while donors rested</p></div>
+  <p class="abs body a fade" data-tap="4" style="left:120px;top:850px;width:1040px;font-size:22px;color:var(--ink-2);--d:.9s">Dubai Health's blood service runs on <b style="color:var(--ink)">voluntary, unpaid donors</b>, like every one we walked through.</p>
+  <aside class="notes">Our job was the donor's whole journey. We helped donors fill in the forms, guided them to the check-up booths, and looked after them with refreshments afterwards. We both donated as well.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Blood camp · Impact" data-level="1" data-step="2" style="--cc:var(--blood);--cu:cuUp">
+  <div class="frame a fall" style="left:1272px;top:44px;--d:.25s;--r:1.5deg"><div class="ph" data-slot="blood-impact" data-src="images/blood-3" data-label="images/blood-impact.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--blood)">Dubai Health</div></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">How did it impact the community?</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:118px">
+    <span class="ln" style="--d:.15s"><span>Every donor.</span></span>
+    <span class="ln" style="--d:.27s"><span>Up to <span style="color:var(--blood)">3 patients each.</span></span></span>
+  </h2>
+  <svg class="abs" style="left:120px;top:440px;width:1060px;height:280px" viewBox="0 0 1060 280">
+    <g fill="none" stroke="var(--ink)" stroke-width="6" stroke-linecap="round">
+      <path data-tap="1" data-cue="560,560" class="draw" pathLength="1" style="--d:1s;--t:.6s" d="M200 140C330 140 330 40 450 40"/>
+      <path data-tap="1" class="draw" pathLength="1" style="--d:1.1s;--t:.6s" d="M200 140H450"/>
+      <path data-tap="1" class="draw" pathLength="1" style="--d:1.2s;--t:.6s" d="M200 140C330 140 330 240 450 240"/></g>
+    <g class="a pop" style="--d:.6s;transform-origin:95px 140px"><g class="loop beat"><svg x="5" y="50" width="180" height="180" viewBox="0 0 64 64" style="fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round"><use href="#i-drop"/></svg></g></g>
+    <g data-tap="1" class="a land" style="--d:1.5s"><rect x="452" y="8" width="296" height="64" rx="32" fill="var(--blood)" stroke="var(--ink)" stroke-width="5"/><text x="600" y="51" text-anchor="middle" style="font:800 24px var(--body);letter-spacing:.12em;fill:var(--cream)">RED CELLS</text></g>
+    <g data-tap="1" class="a land" style="--d:1.7s"><rect x="452" y="108" width="296" height="64" rx="32" fill="var(--gold)" stroke="var(--ink)" stroke-width="5"/><text x="600" y="151" text-anchor="middle" style="font:800 24px var(--body);letter-spacing:.12em;fill:var(--ink)">PLASMA</text></g>
+    <g data-tap="1" class="a land" style="--d:1.9s"><rect x="452" y="208" width="296" height="64" rx="32" fill="var(--pink)" stroke="var(--ink)" stroke-width="5"/><text x="600" y="251" text-anchor="middle" style="font:800 24px var(--body);letter-spacing:.12em;fill:var(--ink)">PLATELETS</text></g>
+    <g data-tap="1" class="a fade" style="--d:2.1s;font:500 23px var(--body);fill:var(--ink-2)"><text x="776" y="48">surgery &amp; trauma</text><text x="776" y="148">burns &amp; clotting</text><text x="776" y="248">cancer care</text></g>
+  </svg>
+  <div data-tap="1" class="loop flow" style="offset-path:path('M200 140C330 140 330 40 450 40');background:var(--blood);--ld:.05s"></div>
+  <div data-tap="1" class="loop flow" style="offset-path:path('M200 140C330 140 330 40 450 40');background:var(--blood);--ld:.6s"></div>
+  <div data-tap="1" class="loop flow" style="offset-path:path('M200 140H450');background:var(--gold);--ld:.05s"></div>
+  <div data-tap="1" class="loop flow" style="offset-path:path('M200 140H450');background:var(--gold);--ld:.6s"></div>
+  <div data-tap="1" class="loop flow" style="offset-path:path('M200 140C330 140 330 240 450 240');background:var(--pink);--ld:.05s"></div>
+  <div data-tap="1" class="loop flow" style="offset-path:path('M200 140C330 140 330 240 450 240');background:var(--pink);--ld:.6s"></div>
+  <div class="abs a rise" data-tap="2" style="left:120px;top:760px;width:500px;--d:2.4s"><div class="k">Every donor we helped through</div><div class="disp" style="font-size:96px;margin-top:6px;color:var(--blood)">&times;3</div><p class="body" style="font-size:21px;margin-top:6px">Each unit splits three ways, so a smoother camp means more patients helped, not just our 2 donations.</p></div>
+  <div class="abs a rise" data-tap="2" style="left:680px;top:760px;width:500px;--d:2.65s"><div class="k">WHO · 2023</div><div class="disp" style="font-size:96px;margin-top:6px"><span data-odo style="--d:2.95s">79</span></div><p class="body" style="font-size:21px;margin-top:6px">countries now get 90%+ of their blood from unpaid volunteers, the safest source.</p></div>
+  <aside class="notes">One donation splits into red cells, plasma and platelets, helping up to three patients. That counts for every donor we helped, not just our two. And the WHO calls unpaid volunteers the safest source.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Blood camp · Learned" data-level="1" data-step="3" style="--cc:var(--blood);--cu:cuUp">
+  <div class="frame a wipe" style="left:1272px;top:44px;--d:.2s"><div class="ph" data-slot="blood-learned" data-src="images/blood-1" data-label="images/blood-learned.jpg" style="width:486px;height:864px"></div><div class="tag" style="">At the camp</div></div>
+  <div class="abs a flip" style="left:120px;top:410px;--d:0.65s"><div class="cardback" data-untap="1" style="width:1060px;height:168px"><span class="q" style="color:var(--gold)">?</span><div><div class="lbl">Most surprising</div><small>Tap to reveal</small></div></div></div>
+  <div class="abs a flip" style="left:120px;top:592px;--d:0.80s"><div class="cardback" data-untap="2" style="width:1060px;height:168px"><span class="q" style="color:var(--gold)">?</span><div><div class="lbl">Most challenging</div><small>Tap to reveal</small></div></div></div>
+  <div class="abs a flip" style="left:120px;top:774px;--d:0.95s"><div class="cardback" data-untap="3" style="width:1060px;height:168px"><span class="q" style="color:var(--gold)">?</span><div><div class="lbl">Most rewarding</div><small>Tap to reveal</small></div></div></div>
+
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">How did it impact us?</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:104px">
+    <span class="ln dn" style="--d:.2s"><span>Empathy comes</span></span>
+    <span class="ln dn" style="--d:.32s"><span>from <span style="color:var(--blood)">going first.</span></span></span>
+  </h2>
+    <div class="lcard a flip" data-tap="1" style="left:120px;top:410px;height:168px;--pc:var(--gold);--d:.15s"><div class="badge rel" style="--s:96px;--sh:5px"><svg class="loop ic-spark" viewBox="0 0 64 64"><use href="#i-spark"/></svg></div><div><div class="k">Most surprising</div><div class="big">Honest reassurance</div><p class="tk">First-timers were nervous at the forms desk. Having just donated ourselves, we could tell them exactly what it felt like, and that calmed them more than any leaflet.</p></div></div>
+  <div class="lcard a flip" data-tap="2" style="left:120px;top:592px;height:168px;--pc:var(--ink);--d:.15s"><div class="badge rel" style="--s:96px;--sh:5px"><svg class="loop ic-breathe" viewBox="0 0 64 64"><use href="#i-mountain"/></svg></div><div><div class="k">Most challenging</div><div class="big">Our own nerves</div><p class="tk">We had to settle our own nerves about the needle, then go straight back to guiding donors between the forms desk and the check-up booths.</p></div></div>
+  <div class="lcard a flip" data-tap="3" style="left:120px;top:774px;height:168px;--pc:var(--blood);--d:.15s"><div class="badge rel" style="--s:96px;--sh:5px"><svg class="loop ic-sway" viewBox="0 0 64 64"><use href="#i-sprout"/></svg></div><div><div class="k">Most rewarding</div><div class="big">The whole journey</div><p class="tk">Seeing donors we had helped with their forms reach the refreshments table. Our 2 donations counted, and so did every donor we helped get there.</p></div></div>
+  <aside class="notes">The surprise: because we had just donated, we could reassure nervous first-timers honestly. The challenge was settling our own nerves and going straight back to guiding donors. The reward was the whole journey: our two donations, and every donor we helped from form to refreshments.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Blood camp · Research" data-level="1" data-step="4" style="--cc:var(--blood);--cu:cuUp">
+  <div class="frame a deal" style="left:1272px;top:44px;--d:.15s;--fx:-260px;--fr:12deg"><div class="ph" data-slot="blood-research" data-src="images/blood-2" data-label="images/blood-research.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--blood)">Dubai Health camp</div></div>
+  <div class="abs a fade" style="left:120px;top:425px;--d:.6s"><div class="slotb" data-untap="1" style="width:515px;height:470px"><b>?</b>Study 1 · Acts of kindness</div></div>
+  <div class="abs a fade" style="left:665px;top:425px;--d:.6s"><div class="slotb" data-untap="2" style="width:515px;height:470px"><b>?</b>Study 2 · Managing stress</div></div>
+
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">Linked to sustainable-happiness research</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:112px;line-height:.95"><span class="wd" style="--d:.2s">Kindness</span> <span class="wd" style="--d:.3s">pays</span><br><span class="wd" style="--d:.4s">the</span> <span class="wd" style="--d:.5s;color:var(--blood)">giver</span> <span class="wd" style="--d:.6s;color:var(--blood)">back.</span></h2>
+    <div data-tap="1" class="loop warm" style="left:30px;top:350px;width:695px;height:620px"></div>
+  <div class="scard a deal" data-tap="1" style="left:120px;top:425px;height:470px;--pc:var(--blood);--fx:300px;--fr:-10deg;--d:.15s"><div class="hd"><svg class="loop ic-beat" viewBox="0 0 64 64"><use href="#i-kind"/></svg>Acts of kindness</div><div class="bd"><div class="big">Warm glow</div><div class="cite"><b>Ferguson et al. (2012)</b> · Transfusion</div><p class="tk">In a study of blood donors, the good feeling of giving (the warm glow) explained why people donate better than pure concern for others did.</p><p class="us"><b>Us</b>We donated, then spent two hours helping others donate. The glow lasted the whole session, not just our minutes in the chair.</p></div></div>
+  <div class="scard a deal" data-tap="2" style="left:665px;top:425px;height:470px;--pc:var(--ink);--fx:-100px;--fr:8deg;--d:.15s"><div class="hd"><svg class="loop ic-breathe" viewBox="0 0 64 64"><use href="#i-breath"/></svg>Managing stress</div><div class="bd"><div class="big">Stress buffer</div><div class="cite"><b>Raposa, Laws &amp; Ansell (2016)</b> · Clin. Psych. Science</div><p class="tk">In a 14-day diary study, on days people helped others more, everyday stress hit their mood less.</p><p class="us" style="--uc:var(--blood)"><b>Us</b>Guiding nervous donors gave our own pre-needle nerves somewhere to go. Helping turned waiting into calm.</p></div></div>
+  <aside class="notes">Acts of kindness: Ferguson found blood donors give for the warm glow of giving, more than pure altruism; we felt it all session. Managing stress: Raposa found that on days people help more, stress hurts their mood less. Guiding nervous donors calmed our own nerves.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Blood camp · Evidence" data-level="1" data-step="5" style="--cc:var(--blood);--cu:cuUp">
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.05s">Evidence · photos from the day</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:96px"><span class="ln" style="--d:.1s"><span>The camp, <span style="color:var(--blood)">in photos.</span></span></span></h2>
+  <div class="abs a deal" style="left:495px;top:434px;--d:.5s;--fx:200px;--fr:10deg"><div class="pile" data-untap="1"><i></i><i></i><i><span class="badge rel" style="--s:110px;--sh:5px"><svg viewBox="0 0 64 64"><use href="#i-drop"/></svg></span><span class="disp" style="font-size:64px;margin-top:22px">3 photos</span><small>Tap to show</small></i></div></div>
+  <div class="frame a corner" data-tap="1" data-cue="645,644" style="left:120px;top:360px;--d:0.00s;--fx:358px;--fy:0px;--fr:-10.0deg;rotate:-2.5deg"><div class="ph" data-slot="blood-ev1" data-src="images/blood-1" data-label="images/blood-ev1.jpg" style="width:300px;height:533px"></div></div>
+  <div class="frame a corner" data-tap="1" style="left:478px;top:360px;--d:0.12s;--fx:0px;--fy:0px;--fr:6.0deg;rotate:1.5deg"><div class="ph" data-slot="blood-ev2" data-src="images/blood-2" data-label="images/blood-ev2.jpg" style="width:300px;height:533px"></div></div>
+  <div class="frame a corner" data-tap="1" style="left:836px;top:360px;--d:0.24s;--fx:-358px;--fy:0px;--fr:-4deg;rotate:-1deg"><div class="ph" data-slot="blood-ev3" data-src="images/blood-3" data-label="images/blood-ev3.jpg" style="width:300px;height:533px"></div></div>
+  <aside class="notes">A few photos from the camp.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Blood camp · Summary" data-level="1" data-step="6" style="--cc:var(--blood);--cu:cuUp">
+  <div class="blk a wipe-l" style="left:1240px;top:-20px;width:700px;height:1120px;background:var(--blood)"></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.05s">Activity 1 of 3 · summary</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:120px"><span class="ln" style="--d:.1s"><span>Blood camp,</span></span><span class="ln" style="--d:.22s"><span style="color:var(--blood)">at a glance.</span></span></h2>
+  <div class="abs" style="left:120px;top:448px;width:1060px">
+    <div class="srow a from-l" style="--d:0.55s;--rc:var(--blood)"><b>Did</b><span>Helped donors with forms, booths and refreshments; we donated too.</span></div>
+    <div class="srow a from-l" style="--d:0.69s;--rc:var(--ink)"><b>Impact</b><span>Every donation can help up to 3 patients.</span></div>
+    <div class="srow a from-l" style="--d:0.83s;--rc:var(--blood)"><b>Learned</b><span>Going first made our reassurance honest.</span></div>
+    <div class="srow a from-l" style="--d:0.97s;--rc:var(--ink)"><b>Research</b><span>Warm glow · stress buffer<small>Ferguson et al. 2012 · Raposa et al. 2016</small></span></div>
+    <div class="srow a from-l" style="--d:1.11s;--rc:var(--blood)"><b>Evidence</b><span>3 photos from the camp</span></div>
+  </div>
+  <div class="loop ripple" style="left:1440px;top:150px;width:300px;height:300px;--rc:var(--cream);--lp:3s"></div>
+  <div class="badge a stamp" style="--s:300px;left:1440px;top:150px;--d:.45s;--r:-6deg"><svg viewBox="0 0 64 64"><use href="#i-drop"/></svg></div>
+  <b class="ok a stamp" style="left:1680px;top:130px;width:110px;height:110px;--nc:var(--ink);--d:.9s;--r:-10deg"><svg viewBox="0 0 64 64"><use href="#i-check"/></svg></b>
+  <div class="abs disp a land" style="left:1240px;width:700px;text-align:center;top:500px;font-size:170px;color:var(--cream);--d:1.1s">2 hrs</div>
+  <div class="abs lbl a fade" style="left:1240px;width:700px;text-align:center;top:680px;color:var(--cream);--d:1.3s">Running total · 2 of 11 hours</div>
+  <div class="abs a land" style="left:1415px;top:790px;--d:1.5s"><button class="go" data-act="next" style="background:var(--ink);color:var(--cream);--gc:var(--cream)">Overview ▶</button></div>
+  <aside class="notes">So: two hours helping donors through the camp, and two donations of our own.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Overview · Blood camp done." data-map="1" style="--cc:var(--ink);--cu:cuUp">
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.05s">2 of 11 hours · next: langar seva</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:116px"><span class="ln" style="--d:.1s"><span>Blood camp</span></span><span class="ln" style="--d:.22s"><span style="color:var(--blood)">done.</span></span></h2>
+  <svg class="abs" style="left:0;top:0;width:1920px;height:1080px" viewBox="0 0 1920 1080" fill="none" stroke-linecap="round">
+    <path d="M40 900C140 900 230 690 330 690" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M330 690C500 690 600 520 770 520" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M770 520C940 520 1040 700 1210 700" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M1210 700C1380 700 1470 500 1640 500" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M1640 500C1740 500 1800 380 1880 380" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M40 900C140 900 230 690 330 690" stroke="var(--ink)" stroke-width="12"/>
+    <path class="draw" pathLength="1" style="--d:.5s;--t:1.3s" d="M330 690C500 690 600 520 770 520" stroke="var(--ink)" stroke-width="12"/>
+  </svg>
+  <div class="mtrav" style="offset-path:path('M330 690C500 690 600 520 770 520');--d:.5s"></div>
+  <div class="node a land done" data-act="enter" data-lv="1" style="left:330px;top:690px;--d:0.3s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-drop"/></svg></div><b class="ok" style="--nc:var(--blood)"><svg viewBox="0 0 64 64"><use href="#i-check"/></svg></b></div>
+  <div class="nlab a fade" style="left:330px;top:802px;--d:0.5s"><div class="lbl" style="color:var(--blood)">Activity 1</div><div class="disp" style="font-size:44px;margin-top:6px;">Blood camp</div><div class="cite">01 Oct · 2 hrs</div></div>
+  <div class="loop ripple" style="left:680px;top:430px;width:180px;height:180px;--rc:var(--saffron);--lp:2.2s"></div>
+  <div class="node a land cur" data-act="enter" data-lv="2" style="left:770px;top:520px;--d:2.6s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-bowl"/></svg></div></div>
+  <div class="nlab a fade" style="left:770px;top:632px;--d:0.6s"><div class="lbl" style="color:var(--saffron)">Activity 2</div><div class="disp" style="font-size:44px;margin-top:6px;">Langar seva</div><div class="cite">14 Nov · 1 hr</div></div>
+  <div class="abs a hang" style="left:660px;top:342px;--d:3s"><span class="flag">Up next ▼</span></div>
+  <div class="node a land locked" data-act="enter" data-lv="3" style="left:1210px;top:700px;--d:0.5s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div><b class="lk"><svg viewBox="0 0 64 64"><use href="#i-lock"/></svg></b></div>
+  <div class="nlab a fade" style="left:1210px;top:812px;--d:0.7s"><div class="lbl" style="color:rgba(28,24,20,.45)">Activity 3</div><div class="disp" style="font-size:44px;margin-top:6px;color:rgba(28,24,20,.45)">Unity Run</div><div class="cite">15 Nov · 8 hrs</div></div>
+  <div class="node a land locked" data-act="enter" data-lv="4" style="left:1640px;top:500px;--d:0.6000000000000001s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-scale"/></svg></div><b class="lk"><svg viewBox="0 0 64 64"><use href="#i-lock"/></svg></b></div>
+  <div class="nlab a fade" style="left:1640px;top:612px;--d:0.8s"><div class="lbl" style="color:rgba(28,24,20,.45)">Reflection</div><div class="disp" style="font-size:44px;margin-top:6px;color:rgba(28,24,20,.45)">Class vs reality</div><div class="cite">what we re-examined</div></div>
+  <aside class="notes">That's two hours. Next, langar seva.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Langar seva · Start" data-level="2" data-step="0" style="--cc:var(--saffron);--cu:cuCirc">
+  <div class="blk a wipe-l" style="left:-20px;top:-20px;width:1250px;height:1120px;background:var(--saffron)"></div>
+  <div class="frame a zoom" style="left:1272px;top:44px;--d:.45s"><div class="ph" data-slot="langar-intro" data-src="images/langar-3" data-label="images/langar-intro.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--ink)">Guru Nanak Darbar</div></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink);--d:.1s">Activity 2 of 3</div>
+  <h1 class="abs disp" style="left:112px;top:200px;font-size:200px;color:var(--ink)"><span class="ln" style="--d:0.15s"><span>Langar</span></span><span class="ln" style="--d:0.27s"><span>Seva</span></span></h1>
+  <div class="abs a rise" style="left:120px;top:690px;display:flex;gap:12px;--d:.75s"><span class="pb" style="--c:var(--cream);color:var(--ink);padding:12px 18px 10px"><span class="lbl" style="font-size:20px">14 Nov 2026</span></span><span class="pb" style="--c:var(--cream);color:var(--ink);padding:12px 18px 10px"><span class="lbl" style="font-size:20px">1 hour</span></span><span class="pb" style="--c:var(--cream);color:var(--ink);padding:12px 18px 10px"><span class="lbl" style="font-size:20px">Guru Nanak Darbar Gurudwara, Jebel Ali</span></span></div>
+  <p class="abs body a fade" style="left:120px;top:772px;width:1040px;font-size:30px;font-weight:500;color:var(--ink);--d:.95s"><b>Our role:</b> cook, serve and sit down with whoever walks in, as equals.</p>
+  <div class="abs a land" style="left:120px;top:885px;--d:1.2s"><button class="go" data-act="next" style="background:var(--ink);color:var(--cream);--gc:var(--cream)">What we did ▶</button></div>
+  <aside class="notes">Next, one hour of langar seva at Guru Nanak Darbar Gurudwara in Jebel Ali, on the fourteenth of November.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Langar seva · Did" data-level="2" data-step="1" style="--cc:var(--saffron);--cu:cuCirc">
+  <div class="blk a iris" style="left:-20px;top:-20px;width:1250px;height:1120px;background:var(--saffron);--ix:30%;--iy:62%"></div>
+  <div class="frame a zoom" style="left:1272px;top:44px;--d:.45s"><div class="ph" data-slot="langar-did" data-src="images/langar-2" data-label="images/langar-did.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--ink)">Behind the counter</div></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink);--d:.1s">Langar = free kitchen · seva = selfless service</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:112px">
+    <span class="ln" style="--d:.15s"><span>Behind the</span></span>
+    <span class="ln" style="--d:.27s"><span style="color:var(--cream)">counter.</span></span>
+  </h2>
+  <svg class="abs" style="left:120px;top:440px;width:560px;height:500px" viewBox="0 0 560 500"><path class="draw" pathLength="1" style="--d:.5s;--t:1.4s" d="M270 80A170 170 0 1 1 269.9 80" fill="none" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/></svg>
+  <div class="loop orbit" data-tap="4"></div>
+  <div class="loop ripple" data-tap="1" style="left:340px;top:470px;width:100px;height:100px;--lp:8s;--ld:0s"></div>
+  <div class="loop ripple" data-tap="2" style="left:510px;top:640px;width:100px;height:100px;--lp:8s;--ld:2s"></div>
+  <div class="loop ripple" data-tap="3" style="left:340px;top:810px;width:100px;height:100px;--lp:8s;--ld:4s"></div>
+  <div class="loop ripple" data-tap="4" style="left:170px;top:640px;width:100px;height:100px;--lp:8s;--ld:6s"></div>
+  <div class="badge a land" data-tap="1" style="--s:100px;left:340px;top:470px;--d:0s"><svg viewBox="0 0 64 64"><use href="#i-pot"/></svg></div>
+  <div class="badge a land" data-tap="2" style="--s:100px;left:510px;top:640px;--d:0s"><svg viewBox="0 0 64 64"><use href="#i-ladle"/></svg></div>
+  <div class="badge a land" data-tap="3" style="--s:100px;left:340px;top:810px;--d:0s"><svg viewBox="0 0 64 64"><use href="#i-pangat"/></svg></div>
+  <div class="badge a land" data-tap="4" style="--s:100px;left:170px;top:640px;--d:0s"><svg viewBox="0 0 64 64"><use href="#i-heart"/></svg></div>
+  <div class="loop steam" data-tap="1" style="left:367px;top:612px;--ld:0s"><svg viewBox="0 0 14 34" width="14" height="34" style="overflow:visible"><path d="M7 32c-6-6 6-9 0-15s6-9 0-15" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/></svg></div>
+  <div class="loop steam" data-tap="1" style="left:383px;top:612px;--ld:0.8s"><svg viewBox="0 0 14 34" width="14" height="34" style="overflow:visible"><path d="M7 32c-6-6 6-9 0-15s6-9 0-15" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/></svg></div>
+  <div class="loop steam" data-tap="1" style="left:399px;top:612px;--ld:1.6s"><svg viewBox="0 0 14 34" width="14" height="34" style="overflow:visible"><path d="M7 32c-6-6 6-9 0-15s6-9 0-15" fill="none" stroke="var(--ink)" stroke-width="3" stroke-linecap="round"/></svg></div>
+  <div class="abs a land" style="left:340px;top:640px;--d:1s;width:100px"><svg viewBox="0 0 64 64" width="100" height="100" style="fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;overflow:visible"><use href="#i-bowl" style="--saffron:var(--cream)"/></svg></div>
+  <div class="abs a fade" data-tap="1" style="left:690px;top:480px;width:500px;--d:.2s"><div class="disp" style="font-size:38px">1 · We organised</div><div class="body" style="font-size:22px">dal, roti, chawal &amp; meethe chawal</div></div>
+  <div class="abs a fade" data-tap="2" style="left:690px;top:585px;width:500px;--d:.2s"><div class="disp" style="font-size:38px">2 · Served</div><div class="body" style="font-size:22px">everyone who came, of every faith</div></div>
+  <div class="abs a fade" data-tap="3" style="left:690px;top:690px;width:500px;--d:.2s"><div class="disp" style="font-size:38px">3 · Sat in pangat</div><div class="body" style="font-size:22px">side by side on the floor, same level</div></div>
+  <div class="abs a fade" data-tap="4" style="left:690px;top:795px;width:500px;--d:.2s"><div class="disp" style="font-size:38px">4 · Were served</div><div class="body" style="font-size:22px">and ate langar ourselves</div></div>
+  <aside class="notes">Langar is the free community kitchen; seva is selfless service. We organised and served the meal, then sat in pangat and were served ourselves.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Langar seva · Impact" data-level="2" data-step="2" style="--cc:var(--saffron);--cu:cuCirc">
+  <div class="frame a from-t" style="left:1272px;top:44px;--d:.2s"><div class="ph" data-slot="langar-impact" data-src="images/langar-1" data-label="images/langar-impact.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--saffron);color:var(--ink)">Serving in pangat</div></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">How did it impact the community?</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:112px">
+    <span class="ln" style="--d:.15s"><span>A free meal,</span></span>
+    <span class="ln" style="--d:.27s"><span style="color:var(--saffron)">with dignity.</span></span>
+  </h2>
+  <svg class="abs" style="left:120px;top:470px;width:1060px;height:230px" viewBox="0 0 1060 230">
+    <text class="a fade" style="--d:.7s;font:800 19px var(--body);letter-spacing:.16em;fill:var(--ink-2)" x="0" y="40">PEHLE PANGAT, PHIR SANGAT · FIRST EAT TOGETHER AS EQUALS</text>
+    <path d="M0 215H1060" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/>
+    <g style="fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round">
+      <svg data-tap="1" class="a land" style="--d:.9s" x="0" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+      <svg data-tap="1" class="a land" style="--d:1.05s" x="150" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+      <svg data-tap="1" class="a land" style="--d:1.2s" x="300" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+      <svg data-tap="1" class="a land" style="--d:1.35s" x="450" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+      <svg data-tap="1" class="a land" style="--d:1.5s" x="600" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+      <svg data-tap="1" class="a land" style="--d:1.65s" x="750" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+      <svg data-tap="1" class="a land" style="--d:1.8s" x="900" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+    </g>
+  </svg>
+  <div data-tap="1" class="loop server" style="--ld:.2s"><svg viewBox="0 0 64 64" width="60" height="60" style="fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;overflow:visible"><use href="#i-bowl"/></svg></div>
+  <div class="abs" style="left:120px;top:760px;width:1060px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+    <div data-tap="2" class="pb a rise" style="--c:var(--ink);color:var(--cream);padding:18px 22px;--d:2s"><div class="disp" style="font-size:46px">Free</div><div class="body" style="font-size:19px;margin-top:4px">for anyone who walks in</div></div>
+    <div data-tap="2" class="pb a rise" style="--c:var(--saffron);padding:18px 22px;--d:2.15s"><div class="disp" style="font-size:46px">Every faith</div><div class="body" style="font-size:19px;margin-top:4px">same row, same food</div></div>
+    <div data-tap="2" class="pb a rise" style="--c:var(--ink);color:var(--cream);padding:18px 22px;--d:2.3s"><div class="disp" style="font-size:46px">101</div><div class="body" style="font-size:19px;margin-top:4px">nationalities at one breakfast here, a Guinness record (2017)</div></div>
+  </div>
+  <aside class="notes">A free meal for anyone, of any faith, eaten side by side. This gurudwara once fed a hundred and one nationalities at one breakfast.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Langar seva · Learned" data-level="2" data-step="3" style="--cc:var(--saffron);--cu:cuCirc">
+  <div class="frame a behind" style="left:1272px;top:44px;--d:.2s"><div class="ph" data-slot="langar-learned" data-src="images/langar-3" data-label="images/langar-learned.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--saffron);color:var(--ink)">Seva</div></div>
+  <div class="abs a flip" style="left:120px;top:440px;--d:0.65s"><div class="cardback tall" data-untap="1" style="width:520px;height:250px"><span class="q" style="color:var(--gold)">?</span><div><div class="lbl">Most surprising</div><small>Tap to reveal</small></div></div></div>
+  <div class="abs a flip" style="left:660px;top:440px;--d:0.80s"><div class="cardback tall" data-untap="2" style="width:520px;height:250px"><span class="q" style="color:var(--gold)">?</span><div><div class="lbl">Most challenging</div><small>Tap to reveal</small></div></div></div>
+  <div class="abs a flip" style="left:120px;top:710px;--d:0.95s"><div class="cardback tall" data-untap="3" style="width:520px;height:250px"><span class="q" style="color:var(--gold)">?</span><div><div class="lbl">Most rewarding</div><small>Tap to reveal</small></div></div></div>
+  <div class="abs a flip" style="left:660px;top:710px;--d:1.10s"><div class="cardback tall" data-untap="4" style="width:520px;height:250px"><span class="q" style="color:var(--gold)">?</span><div><div class="lbl">About us</div><small>Tap to reveal</small></div></div></div>
+
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">How did it impact us?</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:112px">
+    <span class="ln" style="--d:.2s"><span>Giver became</span></span>
+    <span class="ln" style="--d:.32s"><span style="color:var(--saffron)">receiver.</span></span>
+  </h2>
+  <div class="pb a flip lq" data-tap="1" style="left:120px;top:440px;--c:var(--saffron);--fx:-420px;--fy:-260px;--d:.15s"><div class="badge rel" style="--s:84px;--sh:4px"><svg class="loop ic-spark" viewBox="0 0 64 64"><use href="#i-spark"/></svg></div><div><div class="k">Most surprising</div><div class="big">Seats swapped</div><p class="tk">Minutes after ladling out dal and roti, we sat down in pangat and were served the same meal. Giver and receiver swapped places.</p></div></div>
+  <div class="pb a flip lq" data-tap="2" style="left:660px;top:440px;--c:var(--ink);color:var(--cream);--fx:420px;--fy:-260px;--d:.15s"><div class="badge rel" style="--s:84px;--sh:4px;border-color:var(--cream);box-shadow:4px 4px 0 #000"><svg class="loop ic-breathe" viewBox="0 0 64 64"><use href="#i-mountain"/></svg></div><div><div class="k">Most challenging</div><div class="big">One hour</div><p class="tk">No briefing, no rehearsal. We learned the kitchen's rhythm on the spot, by following the sevadars around us.</p></div></div>
+  <div class="pb a flip lq" data-tap="3" style="left:120px;top:710px;--c:var(--green);color:var(--cream);--fx:-420px;--fy:260px;--d:.15s"><div class="badge rel" style="--s:84px;--sh:4px"><svg class="loop ic-beat" viewBox="0 0 64 64"><use href="#i-heart"/></svg></div><div><div class="k">Most rewarding</div><div class="big">Same row</div><p class="tk">Eating the same food, on the same floor, as the people we had just served. No one sat above anyone.</p></div></div>
+  <div class="pb a flip lq" data-tap="4" style="left:660px;top:710px;--c:var(--cream);--fx:420px;--fy:260px;--d:.15s;outline:5px solid var(--ink);outline-offset:-5px"><div class="badge rel" style="--s:84px;--sh:4px"><svg class="loop ic-bob" viewBox="0 0 64 64"><use href="#i-people"/></svg></div><div><div class="k">About us</div><div class="big">Trusted</div><p class="tk">Nobody asked who we were or why we came. We were handed a ladle and trusted, and we wanted to earn it.</p></div></div>
+  <div class="badge a land" data-tap="1" style="--s:100px;--sh:6px;left:600px;top:650px;--d:.6s;z-index:3"><svg class="loop swap" viewBox="0 0 64 64"><path d="M14 30a18 18 0 0 1 33-9"/><path d="M49 11v11H38"/><path d="M50 34a18 18 0 0 1-33 9"/><path d="M15 53V42h11"/></svg></div>
+  <aside class="notes">The surprise: minutes after serving, we were served; giver and receiver swapped places. The challenge was learning the kitchen's rhythm on the spot. The reward was eating as equals, and nobody asked who we were.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Langar seva · Research" data-level="2" data-step="4" style="--cc:var(--saffron);--cu:cuCirc">
+  <div class="frame a tile" style="left:1272px;top:44px;--d:.2s;--ty:-90deg"><div class="ph" data-slot="langar-research" data-src="images/langar-2" data-label="images/langar-research.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--saffron);color:var(--ink)">14 Nov · Jebel Ali</div></div>
+  <div class="abs a fade" style="left:120px;top:394px;--d:.6s"><div class="slotb" data-untap="1" style="width:1060px;height:178px"><b>?</b>Social relationships</div></div>
+  <div class="abs a fade" style="left:120px;top:582px;--d:.6s"><div class="slotb" data-untap="2" style="width:1060px;height:178px"><b>?</b>Expressing gratitude</div></div>
+  <div class="abs a fade" style="left:120px;top:770px;--d:.6s"><div class="slotb" data-untap="3" style="width:1060px;height:178px"><b>?</b>Acts of kindness</div></div>
+
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">Linked to sustainable-happiness research</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:104px">
+    <span class="a track" style="display:block;--d:.15s">Belonging is</span>
+    <span class="a track" style="display:block;color:var(--saffron);--d:.35s">the strategy.</span>
+  </h2>
+  <div class="rrow a from-r" data-tap="1" style="top:394px;--pc:var(--saffron);--tc:var(--ink);--d:.15s"><div class="st"><div class="badge rel" style="--s:58px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-people"/></svg></div><span class="disp">Social<br>relationships</span></div><div class="tx"><div class="cite"><b>Dunbar (2017)</b> · Adaptive Human Behavior &amp; Physiology</div><div class="big">Eat together, bond more</div><p class="tk">People who eat with others more often are happier, trust others more and feel closer to their community.</p><p class="us"><b>Us</b>Pangat seats everyone on the same floor, in one row. After serving, we sat in it too.</p></div></div>
+  <div class="rrow a from-r" data-tap="2" style="top:582px;--pc:var(--ink);--tc:var(--cream);--d:.15s"><div class="st"><div class="badge rel" style="--s:58px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-thanks"/></svg></div><span class="disp">Expressing<br>gratitude</span></div><div class="tx"><div class="cite"><b>Emmons &amp; McCullough (2003)</b> · JPSP</div><div class="big">Gratitude lifts outlook</div><p class="tk">People who listed what they were grateful for each week felt better about their lives and more optimistic.</p><p class="us"><b>Us</b>Seva is gratitude acted out: thanks given as a free meal, and we joined in.</p></div></div>
+  <div class="rrow a from-r" data-tap="3" style="top:770px;--pc:var(--green);--tc:var(--cream);--d:.15s"><div class="st"><div class="badge rel" style="--s:58px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-kind"/></svg></div><span class="disp">Acts of<br>kindness</span></div><div class="tx"><div class="cite"><b>Dunn, Aknin &amp; Norton (2008)</b> · Science</div><div class="big">Giving beats getting</div><p class="tk">People given money to spend on others were happier by evening than those told to spend it on themselves.</p><p class="us"><b>Us</b>Our hour went to strangers of every faith, and we left happier than we arrived.</p></div></div>
+  <aside class="notes">Social relationships: Dunbar found people who eat together feel closer, and pangat seats everyone in one row. Gratitude: Emmons showed it lifts outlook; seva acts it out. Kindness: Dunn found spending on others beats spending on yourself.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Langar seva · Evidence" data-level="2" data-step="5" style="--cc:var(--saffron);--cu:cuCirc">
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.05s">Evidence · photos from the day</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:96px"><span class="ln" style="--d:.1s"><span>The gurudwara, <span style="color:var(--saffron)">in photos.</span></span></span></h2>
+  <div class="abs a deal" style="left:495px;top:434px;--d:.5s;--fx:200px;--fr:10deg"><div class="pile" data-untap="1"><i></i><i></i><i><span class="badge rel" style="--s:110px;--sh:5px"><svg viewBox="0 0 64 64"><use href="#i-bowl"/></svg></span><span class="disp" style="font-size:64px;margin-top:22px">3 photos</span><small>Tap to show</small></i></div></div>
+  <div class="frame a corner" data-tap="1" data-cue="645,644" style="left:120px;top:360px;--d:0.00s;--fx:358px;--fy:0px;--fr:-10.0deg;rotate:-2.5deg"><div class="ph" data-slot="langar-ev1" data-src="images/langar-1" data-label="images/langar-ev1.jpg" style="width:300px;height:533px"></div></div>
+  <div class="frame a corner" data-tap="1" style="left:478px;top:360px;--d:0.12s;--fx:0px;--fy:0px;--fr:6.0deg;rotate:1.5deg"><div class="ph" data-slot="langar-ev2" data-src="images/langar-2" data-label="images/langar-ev2.jpg" style="width:300px;height:533px"></div></div>
+  <div class="frame a corner" data-tap="1" style="left:836px;top:360px;--d:0.24s;--fx:-358px;--fy:0px;--fr:-4deg;rotate:-1deg"><div class="ph" data-slot="langar-ev3" data-src="images/langar-3" data-label="images/langar-ev3.jpg" style="width:300px;height:533px"></div></div>
+  <aside class="notes">And some photos from the gurudwara.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Langar seva · Summary" data-level="2" data-step="6" style="--cc:var(--saffron);--cu:cuCirc">
+  <div class="blk a wipe-l" style="left:1240px;top:-20px;width:700px;height:1120px;background:var(--saffron)"></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.05s">Activity 2 of 3 · summary</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:120px"><span class="ln" style="--d:.1s"><span>Langar seva,</span></span><span class="ln" style="--d:.22s"><span style="color:var(--saffron)">at a glance.</span></span></h2>
+  <div class="abs" style="left:120px;top:448px;width:1060px">
+    <div class="srow a from-l" style="--d:0.55s;--rc:var(--saffron)"><b>Did</b><span>Organised, served, sat in pangat, were served.</span></div>
+    <div class="srow a from-l" style="--d:0.69s;--rc:var(--ink)"><b>Impact</b><span>A free meal for every faith, in one row.</span></div>
+    <div class="srow a from-l" style="--d:0.83s;--rc:var(--saffron)"><b>Learned</b><span>Giver became receiver.</span></div>
+    <div class="srow a from-l" style="--d:0.97s;--rc:var(--ink)"><b>Research</b><span>Gratitude · eating together · giving<small>Emmons &amp; McCullough 2003 · Dunbar 2017 · Dunn et al. 2008</small></span></div>
+    <div class="srow a from-l" style="--d:1.11s;--rc:var(--saffron)"><b>Evidence</b><span>3 photos from the gurudwara</span></div>
+  </div>
+  <div class="loop ripple" style="left:1440px;top:150px;width:300px;height:300px;--rc:var(--ink);--lp:3s"></div>
+  <div class="badge a stamp" style="--s:300px;left:1440px;top:150px;--d:.45s;--r:-6deg"><svg viewBox="0 0 64 64"><use href="#i-bowl"/></svg></div>
+  <b class="ok a stamp" style="left:1680px;top:130px;width:110px;height:110px;--nc:var(--ink);--d:.9s;--r:-10deg"><svg viewBox="0 0 64 64"><use href="#i-check"/></svg></b>
+  <div class="abs disp a land" style="left:1240px;width:700px;text-align:center;top:500px;font-size:170px;color:var(--ink);--d:1.1s">1 hr</div>
+  <div class="abs lbl a fade" style="left:1240px;width:700px;text-align:center;top:680px;color:var(--ink);--d:1.3s">Running total · 3 of 11 hours</div>
+  <div class="abs a land" style="left:1415px;top:790px;--d:1.5s"><button class="go" data-act="next" style="background:var(--ink);color:var(--cream);--gc:var(--cream)">Overview ▶</button></div>
+  <aside class="notes">In one hour, giver became receiver.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Vedansh" data-title="Overview · Langar seva done." data-map="2" style="--cc:var(--ink);--cu:cuUp">
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.05s">3 of 11 hours · next: Unity Run</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:116px"><span class="ln" style="--d:.1s"><span>Langar seva</span></span><span class="ln" style="--d:.22s"><span style="color:var(--saffron)">done.</span></span></h2>
+  <svg class="abs" style="left:0;top:0;width:1920px;height:1080px" viewBox="0 0 1920 1080" fill="none" stroke-linecap="round">
+    <path d="M40 900C140 900 230 690 330 690" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M330 690C500 690 600 520 770 520" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M770 520C940 520 1040 700 1210 700" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M1210 700C1380 700 1470 500 1640 500" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M1640 500C1740 500 1800 380 1880 380" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M40 900C140 900 230 690 330 690" stroke="var(--ink)" stroke-width="12"/>
+    <path d="M330 690C500 690 600 520 770 520" stroke="var(--ink)" stroke-width="12"/>
+    <path class="draw" pathLength="1" style="--d:.5s;--t:1.3s" d="M770 520C940 520 1040 700 1210 700" stroke="var(--ink)" stroke-width="12"/>
+  </svg>
+  <div class="mtrav" style="offset-path:path('M770 520C940 520 1040 700 1210 700');--d:.5s"></div>
+  <div class="node a land done" data-act="enter" data-lv="1" style="left:330px;top:690px;--d:0.3s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-drop"/></svg></div><b class="ok" style="--nc:var(--blood)"><svg viewBox="0 0 64 64"><use href="#i-check"/></svg></b></div>
+  <div class="nlab a fade" style="left:330px;top:802px;--d:0.5s"><div class="lbl" style="color:var(--blood)">Activity 1</div><div class="disp" style="font-size:44px;margin-top:6px;">Blood camp</div><div class="cite">01 Oct · 2 hrs</div></div>
+  <div class="node a land done" data-act="enter" data-lv="2" style="left:770px;top:520px;--d:0.4s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-bowl"/></svg></div><b class="ok" style="--nc:var(--saffron)"><svg viewBox="0 0 64 64"><use href="#i-check"/></svg></b></div>
+  <div class="nlab a fade" style="left:770px;top:632px;--d:0.6s"><div class="lbl" style="color:var(--saffron)">Activity 2</div><div class="disp" style="font-size:44px;margin-top:6px;">Langar seva</div><div class="cite">14 Nov · 1 hr</div></div>
+  <div class="loop ripple" style="left:1120px;top:610px;width:180px;height:180px;--rc:var(--green);--lp:2.2s"></div>
+  <div class="node a land cur" data-act="enter" data-lv="3" style="left:1210px;top:700px;--d:2.6s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div></div>
+  <div class="nlab a fade" style="left:1210px;top:812px;--d:0.7s"><div class="lbl" style="color:var(--green)">Activity 3</div><div class="disp" style="font-size:44px;margin-top:6px;">Unity Run</div><div class="cite">15 Nov · 8 hrs</div></div>
+  <div class="abs a hang" style="left:1100px;top:522px;--d:3s"><span class="flag">Up next ▼</span></div>
+  <div class="node a land locked" data-act="enter" data-lv="4" style="left:1640px;top:500px;--d:0.6000000000000001s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-scale"/></svg></div><b class="lk"><svg viewBox="0 0 64 64"><use href="#i-lock"/></svg></b></div>
+  <div class="nlab a fade" style="left:1640px;top:612px;--d:0.8s"><div class="lbl" style="color:rgba(28,24,20,.45)">Reflection</div><div class="disp" style="font-size:44px;margin-top:6px;color:rgba(28,24,20,.45)">Class vs reality</div><div class="cite">what we re-examined</div></div>
+  <aside class="notes">Three hours so far. Over to Tohraan for the Unity Run.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Tohraan" data-title="Unity Run · Start" data-level="3" data-step="0" style="--cc:var(--green);--cu:cuSide">
+  <div class="blk a wipe-l" style="left:-20px;top:-20px;width:1250px;height:1120px;background:var(--green)"></div>
+  <div class="frame a zoom" style="left:1272px;top:44px;--d:.45s"><div class="ph" data-slot="run-intro" data-src="images/run-5" data-label="images/run-intro.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--ink)">d3 · Dubai</div></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--cream);--d:.1s">Activity 3 of 3</div>
+  <h1 class="abs disp" style="left:112px;top:200px;font-size:150px;color:var(--cream)"><span class="ln" style="--d:0.15s"><span>Emirates NBD</span></span><span class="ln" style="--d:0.27s"><span>Unity Run</span></span></h1>
+  <div class="abs a rise" style="left:120px;top:690px;display:flex;gap:12px;--d:.75s"><span class="pb" style="--c:var(--cream);color:var(--ink);padding:12px 18px 10px"><span class="lbl" style="font-size:20px">15 Nov 2026</span></span><span class="pb" style="--c:var(--cream);color:var(--ink);padding:12px 18px 10px"><span class="lbl" style="font-size:20px">8 hours</span></span><span class="pb" style="--c:var(--cream);color:var(--ink);padding:12px 18px 10px"><span class="lbl" style="font-size:20px">FittGROUP · Dubai Design District</span></span></div>
+  <p class="abs body a fade" style="left:120px;top:770px;width:1040px;font-size:30px;font-weight:500;color:var(--cream);--d:.95s"><b>Our role:</b> eight hours, from pre-dawn set-up to the last runner's medal.</p>
+  <p class="abs body a fade" style="left:120px;top:826px;width:1040px;font-size:21px;color:var(--cream);--d:1.05s">3, 5 &amp; 10 km · open to <b>People of Determination</b> · Hamdan bin Mohammed Community Sports Initiative · <b>“Walk, Run for Unity in Diversity”</b></p>
+  <div class="abs a land" style="left:120px;top:900px;--d:1.2s"><button class="go" data-act="next" style="background:var(--ink);color:var(--cream);--gc:var(--cream)">What we did ▶</button></div>
+  <aside class="notes">Thanks, Vedansh. Our third activity: eight hours at the Emirates NBD Unity Run the very next day, organised by FittGROUP at Dubai Design District.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Tohraan" data-title="Unity Run · Did" data-level="3" data-step="1" style="--cc:var(--green);--cu:cuSide">
+  <div class="blk a wipe-d" style="left:-20px;top:-20px;width:1960px;height:450px;background:var(--green)"></div>
+  <div class="blk loop glint" style="left:0;top:-20px;width:700px;height:450px;--ld:.4s"></div>
+  <div class="frame a from-r" style="left:1272px;top:44px;--d:.45s"><div class="ph" data-slot="run-did" data-src="images/run-2" data-label="images/run-did.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--ink)">~80 flags</div></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:rgba(248,241,226,.8);--d:.1s">What did we do?</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:112px;color:var(--cream)">
+    <span class="ln dn" style="--d:.15s"><span>Jackets on,</span></span>
+    <span class="ln dn" style="--d:.27s"><span style="color:var(--gold)">before dawn.</span></span>
+  </h2>
+  <svg class="abs" style="left:120px;top:470px;width:1060px;height:200px" viewBox="0 0 1060 200">
+    <path d="M20 150C150 150 180 60 280 60S440 150 560 130 720 40 820 60 980 150 1040 110" fill="none" stroke="rgba(28,24,20,.12)" stroke-width="40" stroke-linecap="round"/>
+    <path id="route" class="draw" pathLength="1" style="--d:.4s;--t:1.6s;animation-timing-function:linear" d="M20 150C150 150 180 60 280 60S440 150 560 130 720 40 820 60 980 150 1040 110" fill="none" stroke="var(--ink)" stroke-width="7" stroke-linecap="round"/>
+  </svg>
+  <div class="abs runner loop" style="left:120px;top:470px;width:30px;height:30px;border-radius:50%;background:var(--blood);border:5px solid var(--ink);offset-path:path('M20 150C150 150 180 60 280 60S440 150 560 130 720 40 820 60 980 150 1040 110');offset-rotate:0deg;offset-anchor:50% 50%;offset-distance:0%;opacity:0"></div>
+  <div class="badge a land station" data-tap="1" data-at=".14" style="--s:100px"><svg viewBox="0 0 64 64"><use href="#i-sign"/></svg></div>
+  <div class="badge a land station" data-tap="2" data-at=".4" style="--s:100px"><span class="loop wave"><svg viewBox="0 0 64 64"><use href="#i-flag"/></svg></span></div>
+  <div class="badge a land station" data-tap="3" data-at=".66" style="--s:100px"><svg viewBox="0 0 64 64"><use href="#i-water"/></svg></div>
+  <div class="badge a land station" data-tap="4" data-at=".92" style="--s:100px"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div>
+  <div class="abs a rise" data-tap="1" style="left:120px;top:705px;width:240px;--d:.25s"><div class="disp" style="font-size:34px">1 · Guide</div><p class="body" style="font-size:20px;margin-top:4px">showed runners the start line and where everything was</p></div>
+  <div class="abs a rise" data-tap="2" style="left:385px;top:705px;width:240px;--d:.25s"><div class="disp" style="font-size:34px">2 · Flags</div><p class="body" style="font-size:20px;margin-top:4px">~40 UAE flags each, about <b>80</b> handed out</p></div>
+  <div class="abs a rise" data-tap="3" style="left:650px;top:705px;width:240px;--d:.25s"><div class="disp" style="font-size:34px">3 · Water</div><p class="body" style="font-size:20px;margin-top:4px">water for every runner at the finish</p></div>
+  <div class="abs a rise" data-tap="4" style="left:915px;top:705px;width:250px;--d:.25s"><div class="disp" style="font-size:34px">4 · Medals</div><p class="body" style="font-size:20px;margin-top:4px">a medal around every finisher's neck</p></div>
+  <aside class="notes">We started before dawn in volunteer jackets. We guided runners to the start, handed out about eighty UAE flags, gave out water and put a medal on every finisher.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Tohraan" data-title="Unity Run · Impact" data-level="3" data-step="2" style="--cc:var(--green);--cu:cuSide">
+  <div class="frame a wipe-d" style="left:1272px;top:44px;--d:.2s"><div class="ph" data-slot="run-impact" data-src="images/run-1" data-label="images/run-impact.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--green)">One finish line</div></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">How did it impact the community?</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:112px">
+    <span class="ln sd" style="--d:.15s"><span>Every ability,</span></span>
+    <span class="ln sd" style="--d:.27s"><span style="color:var(--green)">one finish line.</span></span>
+  </h2>
+  <svg class="abs" style="left:120px;top:430px;width:1060px;height:230px" viewBox="0 0 1060 230">
+    <g class="a fade" style="--d:.6s"><rect x="880" y="10" width="14" height="210" fill="var(--ink)"/><rect x="1036" y="10" width="14" height="210" fill="var(--ink)"/>
+      <rect x="880" y="10" width="170" height="52" fill="var(--cream)" stroke="var(--ink)" stroke-width="5"/>
+      <g fill="var(--ink)"><rect x="882" y="12" width="21" height="24"/><rect x="924" y="12" width="21" height="24"/><rect x="966" y="12" width="21" height="24"/><rect x="1008" y="12" width="21" height="24"/><rect x="903" y="36" width="21" height="24"/><rect x="945" y="36" width="21" height="24"/><rect x="987" y="36" width="21" height="24"/><rect x="1029" y="36" width="19" height="24"/></g>
+      <text x="965" y="98" text-anchor="middle" style="font:800 20px var(--body);letter-spacing:.2em;fill:var(--ink)">FINISH</text></g>
+    <path d="M0 220H1060" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/><path class="loop ground" d="M0 220H870" stroke="var(--cream)" stroke-width="2.5"/>
+    <g style="fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round">
+      <g data-tap="1" class="a from-l" style="--d:.9s;--t:1.4s"><g class="loop bob" style="--ld:0s"><svg x="440" y="70" width="140" height="150" viewBox="0 0 64 64"><use href="#i-walk"/></svg></g></g>
+      <g data-tap="1" class="a from-l" style="--d:1.1s;--t:1.4s"><g class="loop bob" style="--ld:0.17s"><svg x="590" y="70" width="140" height="150" viewBox="0 0 64 64"><use href="#i-wheel"/></svg></g></g>
+      <g data-tap="1" class="a from-l" style="--d:1.3s;--t:1.4s"><g class="loop bob" style="--ld:0.33s"><svg x="740" y="70" width="140" height="150" viewBox="0 0 64 64"><use href="#i-run"/></svg></g></g>
+    </g>
+  </svg>
+  <div class="abs" style="left:120px;top:690px;width:1060px;display:grid;grid-template-columns:repeat(3,1fr);gap:30px">
+    <div data-tap="2" class="a rise" style="--d:1.6s"><div class="disp" style="font-size:88px;color:var(--green)">~<span data-odo style="--d:1.6s">80</span></div><p class="body" style="font-size:20px">UAE flags put into runners' hands</p></div>
+    <div data-tap="2" class="a rise" style="--d:1.8s"><div class="disp" style="font-size:88px">3·5·10</div><p class="body" style="font-size:20px">km routes for every age and ability</p></div>
+    <div data-tap="2" class="a rise" style="--d:2s"><div class="disp" style="font-size:88px">Free</div><p class="body" style="font-size:20px">entry for People of Determination, with a companion</p></div>
+  </div>
+  <p class="abs body a fade" data-tap="3" style="left:120px;top:888px;width:1060px;font-size:21px;--d:2.4s"><b>Research says:</b> across 515 studies, contact between groups cut prejudice. A shared finish line is that contact. <span class="cite"><b>Pettigrew &amp; Tropp (2006)</b></span></p>
+  <aside class="notes">The run is built for inclusion: People of Determination run beside every age group. Pettigrew and Tropp's review of 515 studies shows contact between groups cuts prejudice, and a shared finish line is that contact.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Tohraan" data-title="Unity Run · Learned" data-level="3" data-step="3" style="--cc:var(--green);--cu:cuSide">
+  <div class="frame a from-l" style="left:1272px;top:44px;--d:.2s"><div class="ph" data-slot="run-learned" data-src="images/run-4" data-label="images/run-learned.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--green)">8 hours</div></div>
+  <div class="abs a flip" style="left:120px;top:430px;--d:0.65s"><div class="cardback tall" data-untap="1" style="width:330px;height:510px"><span class="q" style="color:var(--gold)">?</span><div><div class="lbl">Surprising</div><small>Tap to reveal</small></div></div></div>
+  <div class="abs a flip" style="left:485px;top:430px;--d:0.80s"><div class="cardback tall" data-untap="2" style="width:330px;height:510px"><span class="q" style="color:var(--gold)">?</span><div><div class="lbl">Challenging</div><small>Tap to reveal</small></div></div></div>
+  <div class="abs a flip" style="left:850px;top:430px;--d:0.95s"><div class="cardback tall" data-untap="3" style="width:330px;height:510px"><span class="q" style="color:var(--gold)">?</span><div><div class="lbl">Rewarding</div><small>Tap to reveal</small></div></div></div>
+
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">How did it impact us?</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:104px">
+    <span class="ln dn" style="--d:.2s"><span>Logistics is kindness</span></span>
+    <span class="ln dn" style="--d:.32s"><span style="color:var(--green)">no one sees.</span></span>
+  </h2>
+  <div class="col a flip" data-tap="1" style="left:120px;--pc:var(--gold);--tt:var(--ink);--d:.15s"><div class="hd"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg class="loop ic-spark" viewBox="0 0 64 64"><use href="#i-spark"/></svg></div><span class="lbl">Surprising</span></div><div class="bd"><div class="big">Hours before the gun</div><p class="tk">Volunteers were setting up in the dark long before the first runner arrived. A race that looks effortless runs on hours of unseen work.</p></div></div>
+  <div class="col a flip" data-tap="2" style="left:485px;--pc:var(--ink);--d:.15s"><div class="hd"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg class="loop ic-breathe" viewBox="0 0 64 64"><use href="#i-mountain"/></svg></div><span class="lbl">Challenging</span></div><div class="bd"><div class="big">8 hours on our feet</div><p class="tk">It came the morning after langar seva. Keeping the same energy for the last runner as for the first was the hardest part.</p></div></div>
+  <div class="col a flip" data-tap="3" style="left:850px;--pc:var(--green);--d:.15s"><div class="hd"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg class="loop ic-sway" viewBox="0 0 64 64"><use href="#i-medal"/></svg></div><span class="lbl">Rewarding</span></div><div class="bd"><div class="big">Every finisher</div><p class="tk">Hanging a medal on every finisher, of every age and ability. The loudest cheers were for People of Determination.</p></div></div>
+  <aside class="notes">What surprised us: a race starts hours before the gun, with volunteers setting up in the dark. The challenge was eight hours on our feet the morning after seva, keeping the same energy for the last runner. The reward was a medal around every finisher's neck.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Tohraan" data-title="Unity Run · Research" data-level="3" data-step="4" style="--cc:var(--green);--cu:cuSide">
+  <div class="frame a hang" style="left:1272px;top:44px;--d:.2s"><div class="ph" data-slot="run-research" data-src="images/run-3" data-label="images/run-research.jpg" style="width:486px;height:864px"></div><div class="tag" style="--tc:var(--green)">Every finisher</div></div>
+  <div class="abs a fade" style="left:120px;top:470px;--d:.6s"><div class="slotb" data-untap="1" style="width:1060px;height:215px"><b>?</b>Study 1 · Living in the present</div></div>
+  <div class="abs a fade" style="left:120px;top:715px;--d:.6s"><div class="slotb" data-untap="2" style="width:1060px;height:215px"><b>?</b>Study 2 · Acts of kindness</div></div>
+
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">Linked to sustainable-happiness research</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:112px">
+    <span class="ln" style="--d:.15s"><span>Fully present,</span></span>
+    <span class="ln" style="--d:.27s"><span style="color:var(--green)">eight hours straight.</span></span>
+  </h2>
+  <div class="rblock a from-r" data-tap="1" style="top:470px;--pc:var(--gold);--uc:var(--green);--d:0s"><div class="big">47%</div><div><div class="k">Living in the present · <span style="color:var(--ink)">Killingsworth &amp; Gilbert (2010), Science</span></div><p class="tk">of the time our minds wander, and <span class="mark" style="--d:.6s">we're less happy when they do</span>, whatever we're doing.</p><p class="us"><b>Us</b>Handing water and medals to runner after runner for eight hours kept us fully in the moment; there was no room to wander.</p></div></div>
+  <div class="rblock a from-r" data-tap="2" style="top:715px;--pc:var(--green);--d:0s"><div class="big">5 in 1</div><div><div class="k">Acts of kindness · <span style="color:var(--ink)">Lyubomirsky, Sheldon &amp; Schkade (2005)</span></div><p class="tk">Students who did five kind acts <span class="mark" style="--d:.6s;--mc:#9FD3AE">in one day</span> each week got happier; spreading the same five across the week made no difference.</p><p class="us"><b>Us</b>Langar seva one evening, the run at dawn the next day: our kindness came in one concentrated burst.</p></div></div>
+  <aside class="notes">Two strategies. Living in the present: Killingsworth and Gilbert found our minds wander almost half the time, and we're less happy when they do; eight hours of water and medals left no room for that. Acts of kindness: Lyubomirsky found five kind acts in one day lift happiness more than five spread across a week. Langar, then the run: kindness in one burst.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Tohraan" data-title="Unity Run · Evidence" data-level="3" data-step="5" style="--cc:var(--green);--cu:cuSide">
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.05s">Evidence · certificates &amp; photos</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:96px"><span class="ln" style="--d:.1s"><span>The run, <span style="color:var(--green)">on record.</span></span></span></h2>
+  <div class="abs a deal" style="left:120px;top:470px;--d:.35s;--fx:0px;--fr:-8deg"><div class="env" data-untap="1" style="--ec:var(--green)"><svg class="flap" viewBox="0 0 400 150" preserveAspectRatio="none"><path d="M0 0H400L200 140Z" fill="#B48E55" stroke="var(--ink)" stroke-width="5" stroke-linejoin="round"/></svg><b class="seal"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></b><div class="disp" style="font-size:44px">Certificates</div><small>Tap to open</small></div></div>
+  <div class="frame a from-b" data-tap="1" style="left:120px;top:330px;--d:0.15s"><div class="ph contain cert" data-slot="cert-run" data-src="images/cert-run-photo" data-label="Unity Run certificate of completion · images/cert-run.jpg" style="width:400px;height:224px"></div></div>
+  <div class="frame a from-b" data-tap="1" style="left:120px;top:618px;--d:0.30s"><div class="ph contain cert" data-slot="cert-run2" data-src="images/cert-run2" data-label="Volunteers.ae certificate · images/cert-run2.jpg" style="width:400px;height:283px"></div></div>
+  <div class="abs a deal" style="left:1040px;top:429px;--d:.5s;--fx:200px;--fr:10deg"><div class="pile" data-untap="2"><i></i><i></i><i><span class="badge rel" style="--s:110px;--sh:5px"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></span><span class="disp" style="font-size:64px;margin-top:22px">4 photos</span><small>Tap to show</small></i></div></div>
+  <div class="frame a corner" data-tap="2" data-cue="1190,639" style="left:592px;top:400px;--d:0.00s;--fx:456px;--fy:0px;--fr:-10.0deg;rotate:-2.5deg"><div class="ph" data-slot="run-ev1" data-src="images/run-1" data-label="images/run-ev1.jpg" style="width:250px;height:444px"></div></div>
+  <div class="frame a corner" data-tap="2" style="left:896px;top:400px;--d:0.12s;--fx:152px;--fy:0px;--fr:6.0deg;rotate:1.5deg"><div class="ph" data-slot="run-ev2" data-src="images/run-2" data-label="images/run-ev2.jpg" style="width:250px;height:444px"></div></div>
+  <div class="frame a corner" data-tap="2" style="left:1200px;top:400px;--d:0.24s;--fx:-152px;--fy:0px;--fr:-4deg;rotate:-1deg"><div class="ph" data-slot="run-ev3" data-src="images/run-3" data-label="images/run-ev3.jpg" style="width:250px;height:444px"></div></div>
+  <div class="frame a corner" data-tap="2" style="left:1504px;top:400px;--d:0.36s;--fx:-456px;--fy:0px;--fr:8deg;rotate:2deg"><div class="ph" data-slot="run-ev4" data-src="images/run-4" data-label="images/run-ev4.jpg" style="width:250px;height:444px"></div></div>
+  <aside class="notes">Here are our two certificates and the photos from d3.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Tohraan" data-title="Unity Run · Summary" data-level="3" data-step="6" style="--cc:var(--green);--cu:cuSide">
+  <div class="blk a wipe-l" style="left:1240px;top:-20px;width:700px;height:1120px;background:var(--green)"></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.05s">Activity 3 of 3 · summary</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:120px"><span class="ln" style="--d:.1s"><span>Unity Run,</span></span><span class="ln" style="--d:.22s"><span style="color:var(--green)">at a glance.</span></span></h2>
+  <div class="abs" style="left:120px;top:448px;width:1060px">
+    <div class="srow a from-l" style="--d:0.55s;--rc:var(--green)"><b>Did</b><span>Guided runners, ~80 flags, water, a medal for every finisher.</span></div>
+    <div class="srow a from-l" style="--d:0.69s;--rc:var(--ink)"><b>Impact</b><span>Every ability, one finish line.</span></div>
+    <div class="srow a from-l" style="--d:0.83s;--rc:var(--green)"><b>Learned</b><span>Logistics is kindness no one sees.</span></div>
+    <div class="srow a from-l" style="--d:0.97s;--rc:var(--ink)"><b>Research</b><span>Presence · kindness in one burst<small>Killingsworth &amp; Gilbert 2010 · Lyubomirsky et al. 2005</small></span></div>
+    <div class="srow a from-l" style="--d:1.11s;--rc:var(--green)"><b>Evidence</b><span>2 certificates + 4 photos from d3</span></div>
+  </div>
+  <div class="loop ripple" style="left:1440px;top:150px;width:300px;height:300px;--rc:var(--cream);--lp:3s"></div>
+  <div class="badge a stamp" style="--s:300px;left:1440px;top:150px;--d:.45s;--r:-6deg"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div>
+  <b class="ok a stamp" style="left:1680px;top:130px;width:110px;height:110px;--nc:var(--ink);--d:.9s;--r:-10deg"><svg viewBox="0 0 64 64"><use href="#i-check"/></svg></b>
+  <div class="abs disp a land" style="left:1240px;width:700px;text-align:center;top:500px;font-size:170px;color:var(--cream);--d:1.1s">8 hrs</div>
+  <div class="abs lbl a fade" style="left:1240px;width:700px;text-align:center;top:680px;color:var(--cream);--d:1.3s">Running total · 11 of 11 hours</div>
+  <div class="abs a land" style="left:1415px;top:790px;--d:1.5s"><button class="go" data-act="next" style="background:var(--ink);color:var(--cream);--gc:var(--cream)">Overview ▶</button></div>
+  <aside class="notes">Eight hours at the run, eleven in total.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Tohraan" data-title="Overview · Eleven hours complete." data-map="3" style="--cc:var(--ink);--cu:cuUp">
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.05s">11 of 11 hours · next: class vs reality</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:116px"><span class="ln" style="--d:.1s"><span>Eleven hours</span></span><span class="ln" style="--d:.22s"><span style="color:var(--green)">complete.</span></span></h2>
+  <svg class="abs" style="left:0;top:0;width:1920px;height:1080px" viewBox="0 0 1920 1080" fill="none" stroke-linecap="round">
+    <path d="M40 900C140 900 230 690 330 690" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M330 690C500 690 600 520 770 520" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M770 520C940 520 1040 700 1210 700" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M1210 700C1380 700 1470 500 1640 500" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M1640 500C1740 500 1800 380 1880 380" stroke="rgba(28,24,20,.35)" stroke-width="7" stroke-dasharray="1 22"/>
+    <path d="M40 900C140 900 230 690 330 690" stroke="var(--ink)" stroke-width="12"/>
+    <path d="M330 690C500 690 600 520 770 520" stroke="var(--ink)" stroke-width="12"/>
+    <path d="M770 520C940 520 1040 700 1210 700" stroke="var(--ink)" stroke-width="12"/>
+    <path class="draw" pathLength="1" style="--d:.5s;--t:1.3s" d="M1210 700C1380 700 1470 500 1640 500" stroke="var(--ink)" stroke-width="12"/>
+  </svg>
+  <div class="mtrav" style="offset-path:path('M1210 700C1380 700 1470 500 1640 500');--d:.5s"></div>
+  <div class="node a land done" data-act="enter" data-lv="1" style="left:330px;top:690px;--d:0.3s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-drop"/></svg></div><b class="ok" style="--nc:var(--blood)"><svg viewBox="0 0 64 64"><use href="#i-check"/></svg></b></div>
+  <div class="nlab a fade" style="left:330px;top:802px;--d:0.5s"><div class="lbl" style="color:var(--blood)">Activity 1</div><div class="disp" style="font-size:44px;margin-top:6px;">Blood camp</div><div class="cite">01 Oct · 2 hrs</div></div>
+  <div class="node a land done" data-act="enter" data-lv="2" style="left:770px;top:520px;--d:0.4s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-bowl"/></svg></div><b class="ok" style="--nc:var(--saffron)"><svg viewBox="0 0 64 64"><use href="#i-check"/></svg></b></div>
+  <div class="nlab a fade" style="left:770px;top:632px;--d:0.6s"><div class="lbl" style="color:var(--saffron)">Activity 2</div><div class="disp" style="font-size:44px;margin-top:6px;">Langar seva</div><div class="cite">14 Nov · 1 hr</div></div>
+  <div class="node a land done" data-act="enter" data-lv="3" style="left:1210px;top:700px;--d:0.5s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div><b class="ok" style="--nc:var(--green)"><svg viewBox="0 0 64 64"><use href="#i-check"/></svg></b></div>
+  <div class="nlab a fade" style="left:1210px;top:812px;--d:0.7s"><div class="lbl" style="color:var(--green)">Activity 3</div><div class="disp" style="font-size:44px;margin-top:6px;">Unity Run</div><div class="cite">15 Nov · 8 hrs</div></div>
+  <div class="loop ripple" style="left:1550px;top:410px;width:180px;height:180px;--rc:var(--ink);--lp:2.2s"></div>
+  <div class="node a land cur" data-act="enter" data-lv="4" style="left:1640px;top:500px;--d:2.6s"><div class="badge"><svg viewBox="0 0 64 64"><use href="#i-scale"/></svg></div></div>
+  <div class="nlab a fade" style="left:1640px;top:612px;--d:0.8s"><div class="lbl" style="color:var(--ink)">Reflection</div><div class="disp" style="font-size:44px;margin-top:6px;">Class vs reality</div><div class="cite">what we re-examined</div></div>
+  <div class="abs a hang" style="left:1530px;top:322px;--d:3s"><span class="flag">Up next ▼</span></div>
+  <aside class="notes">That's all three activities. Finally, where class and reality disagreed.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Tohraan" data-title="Contradictions · Class vs reality" data-level="4" data-step="0" style="--cc:var(--ink);--cu:cuUp">
+  <div class="abs lbl a fade" style="left:120px;top:244px;color:var(--ink-2);font-size:19px;--d:.3s">Contradictions · 3 claims from class, and what we found</div>
+  <h2 class="abs disp" style="left:116px;top:136px;font-size:96px"><span class="a track" style="display:block;--d:.05s">Class vs. <span style="color:var(--blood)">reality</span></span></h2>
+  <div class="abs a stamp" data-tap="3" style="right:120px;top:120px;--r:6deg;--d:.9s;border:6px solid var(--blood);color:var(--blood);background:var(--paper);padding:14px 20px 12px"><span class="lbl" style="font-size:26px">Position re-examined</span></div>
+  <div class="abs" style="left:120px;top:296px;width:1680px;display:grid;grid-template-columns:600px 1fr;row-gap:22px;column-gap:0">
+    <div class="a fade row-c" style="--d:0.42s"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-book"/></svg></div><div><span class="lbl">In class</span><div class="big">Freely chosen</div><p>Helping lifts well-being most when it's our own choice.</p><div class="cite">Weinstein &amp; Ryan (2010)</div></div></div>
+    <div style="position:relative"><div class="slotb" data-untap="1" style="position:absolute;inset:0"><b>?</b>What we found</div><div class="a behind row-f" data-tap="1" style="--d:0s;height:100%"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg class="loop ic-scan" viewBox="0 0 64 64"><use href="#i-lens"/></svg></div><div><span class="lbl">We found</span><div class="big">Started for a grade</div><p>By the medals, the motivation had become our own.</p></div></div></div>
+    <div class="a fade row-c" style="--d:0.54s"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-book"/></svg></div><div><span class="lbl">In class</span><div class="big">40% is up to us</div><p>The “happiness pie” gives circumstances just 10%.</p><div class="cite">Lyubomirsky et al. (2005)</div></div></div>
+    <div style="position:relative"><div class="slotb" data-untap="2" style="position:absolute;inset:0"><b>?</b>What we found</div><div class="a behind row-f" data-tap="2" style="--d:0s;height:100%"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg class="loop ic-scan" viewBox="0 0 64 64"><use href="#i-lens"/></svg></div><div><span class="lbl">We found</span><div class="big">Circumstances count</div><p>We could help only because we were healthy, free and in a city that makes it easy.</p><div class="cite">cf. Brown &amp; Rohrer (2020), J. Happiness Studies</div></div></div></div>
+    <div class="a fade row-c" style="--d:0.66s"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-book"/></svg></div><div><span class="lbl">In class</span><div class="big">Giver helps receiver</div><p>Kindness flows one way.</p></div></div>
+    <div style="position:relative"><div class="slotb" data-untap="3" style="position:absolute;inset:0"><b>?</b>What we found</div><div class="a behind row-f" data-tap="3" style="--d:0s;height:100%"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg class="loop ic-scan" viewBox="0 0 64 64"><use href="#i-lens"/></svg></div><div><span class="lbl">We re-examined</span><div class="big">Belonging</div><p>At langar, the people we served then served us.</p></div></div></div>
+  </div>
+  <style>
+    .row-c,.row-f{display:flex;gap:22px;align-items:flex-start;padding:22px 28px;min-height:176px}
+    .row-c{border:4px dashed rgba(28,24,20,.4);border-right:0}
+    .row-f{background:var(--cream);border:5px solid var(--ink);box-shadow:10px 10px 0 var(--ink);border-left:14px solid var(--blood)}
+    .row-c p,.row-f p{font:500 22px/1.34 var(--body);margin-top:6px;color:var(--ink-2)}
+    .row-c .big,.row-f .big{font-family:var(--display);text-transform:uppercase;font-size:46px;line-height:.95;margin-top:8px}
+    .row-c .lbl,.row-f .lbl{font-size:17px;color:var(--ink-2)}
+    .row-f .lbl{color:var(--blood)}
+    .row-c .cite,.row-f .cite{margin-top:8px}
+  </style>
+  <aside class="notes">We also found contradictions. Weinstein and Ryan show helping lifts well-being most when it's freely chosen, and honestly, we started for a grade; by the medals, the motivation was our own. The forty percent happiness pie felt too neat: we could help only because we were healthy, free and in a city that makes it easy. And at langar, the people we served then served us. Kindness felt less like charity, more like belonging.</aside>
+</section>
+
+
+<section class="slide m2" data-speaker="Tohraan" data-title="Sustainable happiness is served" style="--fc:#cbbfa9;--cc:var(--ink);--cu:cuUp">
+  <div class="blk a shutter-t" style="left:-20px;top:-20px;width:1960px;height:562px;background:var(--ink)"></div>
+  <div class="blk a shutter-b" style="left:-20px;top:538px;width:1960px;height:562px;background:var(--ink)"></div>
+  <div class="abs lbl a fade" style="left:120px;top:130px;color:var(--gold);--d:.8s">What we're taking away</div>
+  <h1 class="abs disp" style="left:114px;top:190px;font-size:150px;color:var(--cream);line-height:.95">
+    <span class="wd" style="--d:1s">Sustainable</span> <span class="wd" style="--d:1.15s">happiness</span><br>
+    <span class="wd" style="--d:1.35s">isn't</span> <span class="wd" style="--d:1.5s">found.</span><br>
+    <span class="wd" style="--d:1.9s">It's</span> <span class="a stamp" style="display:inline-block;color:var(--blood);--d:2.1s;--r:-3deg">served.</span>
+  </h1>
+  <p class="abs body a rise" style="left:120px;top:690px;width:1050px;color:#d9cfbd;font-size:28px;--d:2.2s">Happiness that contributes to individual, community or global well-being <b style="color:var(--cream)">without exploiting other people, the environment or future generations</b>. <span class="cite" style="color:#a99d88">(O'Brien, 2010)</span></p>
+  <div class="abs a rise" style="left:120px;top:850px;display:flex;gap:12px;--d:2.4s">
+    <span class="pb lbl" style="--c:var(--blood);color:var(--cream);padding:12px 16px 10px;font-size:20px">11 hours</span>
+    <span class="pb lbl" style="--c:var(--saffron);padding:12px 16px 10px;font-size:20px">3 activities</span>
+    <span class="pb lbl" style="--c:var(--green);color:var(--cream);padding:12px 16px 10px;font-size:20px">2 donations</span>
+    <span class="pb lbl" style="--c:var(--cream);padding:12px 16px 10px;font-size:20px">~80 flags</span>
+  </div>
+  
+  <div class="hold loop float" style="left:1250px;top:480px;transform-origin:60px 60px;--ld:0.0s"><div class="badge a pop" style="--s:120px;left:0;top:0;--d:2.5s;box-shadow:8px 8px 0 #000"><svg viewBox="0 0 64 64"><use href="#i-drop"/></svg></div></div>
+  <div class="hold loop float" style="left:1400px;top:520px;transform-origin:60px 60px;--ld:0.4s"><div class="badge a pop" style="--s:120px;left:0;top:0;--d:2.6s;box-shadow:8px 8px 0 #000"><svg viewBox="0 0 64 64"><use href="#i-bowl"/></svg></div></div>
+  <div class="hold loop float" style="left:1550px;top:480px;transform-origin:60px 60px;--ld:0.8s"><div class="badge a pop" style="--s:120px;left:0;top:0;--d:2.7s;box-shadow:8px 8px 0 #000"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div></div>
+  <div class="hold loop float" style="left:1700px;top:520px;transform-origin:60px 60px;--ld:1.2s"><div class="badge a pop" style="--s:120px;left:0;top:0;--d:2.8s;box-shadow:8px 8px 0 #000"><svg viewBox="0 0 64 64"><use href="#i-scale"/></svg></div></div>
+  <div class="abs disp a rise" style="left:1250px;top:720px;font-size:120px;color:var(--cream);--d:2.8s">Thank you</div>
+  <div class="abs lbl a fade" style="left:1256px;top:850px;color:var(--gold);font-size:26px;--d:3s">Questions welcome</div>
+  <aside class="notes">So here's our conclusion. Sustainable happiness isn't something you find; it's something you serve. It's happiness that helps others without costing anyone else. Thank you. We're happy to take questions.</aside>
+</section>
+
+</div></div>
+<div id="hint">→ / Space: reveal, then next · ← back · click TAP or buttons · F fullscreen · P presenter · E edit photos</div>
+<div id="editbar"><b>EDIT PHOTOS</b><span>Click "Replace" on any frame, or drop a photo onto it · drag a photo to reframe it · → / ← still move between steps</span><button id="esave">Save to images folder</button><button id="edone">Done (E)</button><span id="emsg"></span></div>
+<div id="presenter">
+  <div><div class="k" id="pnow"></div><h1 id="ptitle"></h1><div id="pnotes"></div></div>
+  <div class="side">
+    <div><div class="k">Speaker timer</div><div id="ptimer">0:00</div><div class="small" id="ptarget"></div></div>
+    <div><div class="k">Total</div><div style="font:400 44px/1 var(--display);margin-top:8px" id="ptotal">0:00</div><div class="small">pair limit 6:00</div></div>
+    <div><div class="k">Next</div><div style="font-size:22px;margin-top:8px" id="pnext"></div></div>
+    <div class="small">← → here also moves the deck. The speaker timer restarts when the speaker changes; the total starts when you leave slide 1.</div>
+  </div>
+</div>
+
+<script src="images/positions.js"></script>
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const slides = [...document.querySelectorAll('.slide')], N = slides.length;
+  const TARGET = {Tohraan: 170, Vedansh: 170};
+  const LV = {1: {name: 'Blood camp', hrs: 2, c: 'var(--blood)', t: 'var(--cream)'}, 2: {name: 'Langar seva', hrs: 1, c: 'var(--saffron)', t: 'var(--ink)'},
+              3: {name: 'Unity Run', hrs: 8, c: 'var(--green)', t: 'var(--cream)'}, 4: {name: 'Class vs reality', hrs: 0, c: 'var(--ink)', t: 'var(--cream)'}};
+  const STEPS = ['Start', 'Did', 'Impact', 'Learned', 'Research', 'Evidence', 'Summary'];
+  const lvOf = s => +s.dataset.level || 0, stOf = s => +s.dataset.step || 0;
+  const idx = (l, st) => slides.findIndex(s => lvOf(s) === l && stOf(s) === st);
+  const groups = s => [...new Set([...s.querySelectorAll('[data-tap]')].map(e => +e.dataset.tap))].sort((a, b) => a - b);
+  const pending = s => groups(s).filter(g => !s.classList.contains('t' + g));
+  const reveal = (s, g) => { s.classList.add('t' + g); s.querySelectorAll(`[data-tap="${g}"]`).forEach(e => e.classList.add('on')); };
+
+  // ---- unity run: place stations on the route ----
+  const route = document.getElementById('route');
+  if (route) {
+    const box = route.ownerSVGElement, ox = parseFloat(box.style.left), oy = parseFloat(box.style.top), L = route.getTotalLength();
+    document.querySelectorAll('.station').forEach(st => {
+      const f = +st.dataset.at, p = route.getPointAtLength(L * f);
+      st.style.left = (ox + p.x - 50) + 'px'; st.style.top = (oy + p.y - 50) + 'px';
+      const r = document.createElement('div');   // pulse as the lapping runner passes
+      r.className = 'loop ripple'; if (st.dataset.tap) r.dataset.tap = st.dataset.tap;
+      r.style.cssText = `left:${st.style.left};top:${st.style.top};width:100px;height:100px;--lp:6s;--ld:${(f * 6).toFixed(2)}s`;
+      st.before(r);
+    });
+  }
+
+  // ---- tap groups: each group's delays start from its own first move ----
+  slides.forEach(s => groups(s).forEach(g => {
+    const els = [...s.querySelectorAll(`[data-tap="${g}"]`)].flatMap(e => [e, ...e.querySelectorAll('[style*="--d"]')])
+      .filter(e => e.style.getPropertyValue('--d'));
+    if (!els.length) return;
+    const ds = els.map(e => parseFloat(e.style.getPropertyValue('--d')) || 0), m = Math.min(...ds);
+    els.forEach((e, i) => e.style.setProperty('--d', (ds[i] - m).toFixed(2) + 's'));
+  }));
+
+  // ---- motion v2: kinetic headline characters, photo curtains, odometer digits ----
+  document.querySelectorAll('.m2 .ln>span').forEach(line => {
+    let i = 0;
+    const split = node => [...node.childNodes].forEach(n => {
+      if (n.nodeType !== 3) return split(n);
+      const f = document.createDocumentFragment();
+      [...n.textContent].forEach(c => {
+        const ch = document.createElement('span');
+        ch.className = 'ch'; ch.textContent = c === ' ' ? ' ' : c; ch.style.setProperty('--i', i++);
+        f.appendChild(ch);
+      });
+      n.replaceWith(f);
+    });
+    split(line);
+  });
+  document.querySelectorAll('.m2 .frame .ph').forEach(ph => ph.insertAdjacentHTML('afterbegin', '<i class="cv"></i><i class="curtain"></i>'));
+  document.querySelectorAll('[data-odo]').forEach(el => {
+    el.innerHTML = [...el.textContent].map((c, j) =>
+      `<span class="odo"><span style="--n:${+c + 10};--j:${j}">${[...Array(20)].map((_, k) => k % 10).join('<br>')}</span></span>`).join('');
+  });
+
+  // ---- layers for parallax + speaker chip ----
+  slides.forEach(s => {
+    const bg = document.createElement('div'), fg = document.createElement('div');
+    bg.className = 'bg'; fg.className = 'fg';
+    [...s.children].forEach(c => { if (c.tagName === 'ASIDE') return; (c.classList.contains('blk') ? bg : fg).appendChild(c); });
+    s.prepend(bg, fg);
+    const c = s.dataset.speaker === 'Tohraan' ? 'var(--saffron)' : 'var(--green)';
+    s.insertAdjacentHTML('beforeend', `<div class="speaker" style="--c:${c}"><b class="dot"></b>${s.dataset.speaker.toUpperCase()}</div>`);
+  });
+
+  // ---- photos: browser-saved (edit mode) > images/<slot>.jpg > data-src default ----
+  const DB = (() => {
+    let p = null;
+    const open = () => p || (p = new Promise((res, rej) => {
+      const r = indexedDB.open('happiness-deck', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('slots');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    }));
+    const run = (mode, fn) => open().then(db => new Promise((res, rej) => {
+      const t = db.transaction('slots', mode), q = fn(t.objectStore('slots'));
+      t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error);
+    }));
+    return {
+      all: () => open().then(db => new Promise(res => {
+        const out = {}, c = db.transaction('slots').objectStore('slots').openCursor();
+        c.onsuccess = () => { const k = c.result; if (k) { out[k.key] = k.value; k.continue(); } else res(out); };
+        c.onerror = () => res(out);
+      })).catch(() => ({})),
+      get: k => run('readonly', st => st.get(k)).catch(() => null),
+      put: (k, v) => run('readwrite', st => st.put(v, k)),
+      del: k => run('readwrite', st => st.delete(k)),
+    };
+  })();
+  const EXT = ['jpg', 'jpeg', 'png', 'webp', 'JPG', 'JPEG', 'PNG'];
+  const firstOk = list => new Promise(res => {
+    let i = 0; const img = new Image();
+    img.onload = () => res(list[i]); img.onerror = () => (++i < list.length ? img.src = list[i] : res(null));
+    img.src = list[0];
+  });
+  const XP = params.has('export');
+  const fileList = ph => { const sl = ph.dataset.slot, src = ph.dataset.src;
+    return [...EXT.map(x => `images/${sl}.${x}`),                                   // real photo saved for this slot
+            ...(XP ? [] : [`images/placeholders/${sl}.jpg`]),                        // AI placeholder: live deck only, never exported
+            ...(src && src !== `images/${sl}` ? EXT.map(x => `${src}.${x}`) : [])]; };   // genuine default
+  const show = (ph, src, pos) => new Promise(res => {
+    ph.querySelector('.kb')?.remove();
+    if (!src) { ph.classList.add('missing'); return res(); }
+    const kb = document.createElement('div'), img = new Image();
+    kb.className = 'kb loop'; img.draggable = false; if (pos) img.style.objectPosition = pos;
+    img.onload = () => { ph.classList.remove('missing'); res(); };
+    img.onerror = () => { kb.remove(); ph.classList.add('missing'); res('bad'); };
+    img.src = src; kb.appendChild(img); ph.insertBefore(kb, ph.querySelector('.eov'));
+  });
+  const phs = [...document.querySelectorAll('.ph[data-slot]')];
+  const POS = window.__POS || {};
+  const recsP = params.has('export') ? Promise.resolve({}) : DB.all();
+  const loadPh = (ph, recs) => {
+    const r = recs[ph.dataset.slot], pos = (r && r.pos) || POS[ph.dataset.slot];
+    return r && r.blob ? (ph.classList.remove('ai'), show(ph, URL.createObjectURL(r.blob), pos)) : firstOk(fileList(ph)).then(src => (ph.classList.toggle('ai', !!src && src.includes('/placeholders/')), show(ph, src, pos)));
+  };
+  const loads = phs.map(ph => recsP.then(recs => loadPh(ph, recs)));
+
+  // ---- presenter sync ----
+  let ch = null; try { ch = new BroadcastChannel('happiness-deck'); } catch (e) {}
+  const send = m => { try { ch && ch.postMessage(m); } catch (e) {} try { localStorage.setItem('happiness-deck', JSON.stringify({...m, t: Date.now()})); } catch (e) {} };
+  const listen = fn => { if (ch) ch.onmessage = e => fn(e.data); addEventListener('storage', e => { if (e.key === 'happiness-deck' && e.newValue) { try { fn(JSON.parse(e.newValue)); } catch (_) {} } }); };
+
+  if (params.has('presenter')) {
+    document.body.classList.add('presenter');
+    let spk = null, spkStart = Date.now(), totStart = null;
+    const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+    const show = (i, left) => {
+      const s = slides[i];
+      if (s.dataset.speaker !== spk) { spk = s.dataset.speaker; spkStart = Date.now(); }
+      if (totStart === null && i > 0) totStart = Date.now();
+      document.getElementById('pnow').textContent = `Step ${i + 1} / ${N} · ${spk} speaking` + (left ? ` · ${left} tap${left > 1 ? 's' : ''} left` : '');
+      document.getElementById('ptitle').textContent = s.dataset.title;
+      document.getElementById('pnotes').textContent = s.querySelector('.notes')?.textContent || '';
+      document.getElementById('pnext').textContent = slides[i + 1] ? `${slides[i + 1].dataset.title} (${slides[i + 1].dataset.speaker})` : 'End';
+      document.getElementById('ptarget').textContent = `target ${fmt(TARGET[spk])}`;
+    };
+    listen(m => m.type === 'at' && show(m.i, m.left));
+    setInterval(() => { const e = (Date.now() - spkStart) / 1000, el = document.getElementById('ptimer');
+      el.textContent = fmt(e); el.classList.toggle('over', e > TARGET[spk]);
+      document.getElementById('ptotal').textContent = totStart ? fmt((Date.now() - totStart) / 1000) : '0:00'; }, 250);
+    addEventListener('keydown', e => {
+      if (['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key)) send({type: 'go', d: 1});
+      if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) send({type: 'go', d: -1});
+    });
+    show(0); send({type: 'hello'});
+    return;
+  }
+
+  const stage = document.getElementById('stage');
+  const fit = () => stage.style.transform = `translate(-50%,-50%) scale(${Math.min(innerWidth / 1920, innerHeight / 1080)})`;
+  addEventListener('resize', () => { fit(); placeCue(0); }); fit();
+
+  // ---- HUD: level chip, step buttons, hours meter, NEXT ----
+  const hud = document.createElement('div'); hud.id = 'hud';
+  const ck = '<svg class="hck" viewBox="0 0 64 64"><use href="#i-check"/></svg>', lk = '<svg class="hlk" viewBox="0 0 64 64"><use href="#i-lock"/></svg>';
+  hud.innerHTML = `<div class="hlvl"><b id="hlv"></b><span id="hst"></span></div>
+    <div class="hsteps">${STEPS.slice(1).map((n, i) => `<button class="hbtn" data-s="${i + 1}" tabindex="-1">${ck}${lk}${n}</button>`).join('')}</div>
+    <div class="hmeter">${[1, 2, 3].map(l => `<i data-l="${l}" style="--c:${LV[l].c};flex:${LV[l].hrs}"></i>`).join('')}<span><b id="hhrs"></b></span></div>
+    <button class="hbtn hnext" id="hnext" data-act="next" tabindex="-1"></button>`;
+  stage.appendChild(hud);
+  const btns = [...hud.querySelectorAll('.hsteps button')], segs = [...hud.querySelectorAll('.hmeter i')];
+  const maxStep = {1: -1, 2: -1, 3: -1};
+  const SUMI = {1: idx(1, 6), 2: idx(2, 6), 3: idx(3, 6)};
+  const earnedAt = i => [1, 2, 3].filter(l => SUMI[l] >= 0 && SUMI[l] <= i);
+  const meterOn = new Set();
+  const renderHud = (i, instant) => {
+    const s = slides[i], l = lvOf(s), st = stOf(s), map = s.dataset.map != null;
+    if (l && l < 4) maxStep[l] = Math.max(maxStep[l], st);
+    hud.dataset.mode = l && l < 4 ? 'full' : (l === 4 || map) ? 'lite' : 'off';
+    hud.style.setProperty('--lc', LV[l] ? LV[l].c : 'var(--ink)'); hud.style.setProperty('--lt', LV[l] ? LV[l].t : 'var(--cream)');
+    const e = earnedAt(i);
+    document.getElementById('hlv').textContent = map ? 'Overview' : l === 4 ? 'Reflection' : l ? `Activity ${l} of 3` : '';
+    document.getElementById('hst').textContent = map ? `${e.length} of 3 activities done` : l === 4 ? 'Class vs reality' : l ? `${LV[l].name} · ${STEPS[st]}` : '';
+    if (l && l < 4) btns.forEach(b => { const k = +b.dataset.s;
+      b.className = 'hbtn ' + (k === st ? 'on' : k <= maxStep[l] ? 'done' : k === Math.max(maxStep[l], st) + 1 ? 'next' : 'lock'); });
+    document.getElementById('hnext').textContent = st === 6 ? 'Overview ▶' : (l && l < 4 && st === 0) ? 'Start ▶' : map ? 'Begin ▶' : i === N - 1 ? 'End' : 'Next ▶';
+    document.getElementById('hhrs').textContent = `${e.reduce((a, k) => a + LV[k].hrs, 0)} / 11 hrs`;
+    segs.forEach(sg => { const k = +sg.dataset.l, on = e.includes(k);
+      if (on && !meterOn.has(k)) { meterOn.add(k); sg.style.transform = 'scaleX(1)';
+        if (!instant) sg.animate([{transform: 'scaleX(0)'}, {transform: 'scaleX(1)'}], {duration: 1100, delay: 600, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards'}); }
+      if (!on && meterOn.has(k)) { meterOn.delete(k); sg.style.transform = 'scaleX(0)'; } });
+  };
+  const shake = el => el.animate([{translate: '0'}, {translate: '-10px'}, {translate: '10px'}, {translate: '-6px'}, {translate: '4px'}, {translate: '0'}], {duration: 380, easing: 'ease-out'});
+
+  // ---- the TAP cue sits on the next thing to reveal ----
+  const cue = document.createElement('button'); cue.id = 'cue'; cue.tabIndex = -1; cue.hidden = true; cue.innerHTML = '<b></b>'; stage.appendChild(cue);
+  let cur = 0, busy = false;
+  function placeCue(delay) {
+    const s = slides[cur], all = groups(s), p = pending(s);
+    if (!p.length || busy || document.body.classList.contains('static')) { cue.hidden = true; return; }
+    const els = [...s.querySelectorAll(`[data-tap="${p[0]}"]`)];
+    const t = els.find(e => e.dataset.cue) || els.find(e => e.classList.contains('badge')) || els[0];
+    let x, y;
+    if (t.dataset.cue) [x, y] = t.dataset.cue.split(',').map(Number);
+    else { const r = t.getBoundingClientRect(), sr = stage.getBoundingClientRect(), k = sr.width / 1920;
+      x = (r.left + r.width / 2 - sr.left) / k; y = (r.top + Math.min(r.height / 2, 130) - sr.top) / k; }
+    cue.style.left = x + 'px'; cue.style.top = y + 'px';
+    cue.querySelector('b').textContent = `Tap ${all.length - p.length + 1}/${all.length}`;
+    cue.hidden = false; cue.classList.remove('show'); void cue.offsetWidth;
+    cue.style.setProperty('--cd', (delay ?? 1) + 's'); cue.classList.add('show');
+  }
+
+  // ---- export: one page per step, every tap revealed ----
+  if (params.has('export')) {
+    document.body.classList.add('static');
+    cur = Math.max(0, Math.min(N - 1, (+params.get('export') || 1) - 1));
+    for (let j = 0; j <= cur; j++) renderHud(j, true);
+    const s = slides[cur]; groups(s).forEach(g => reveal(s, g));
+    s.classList.add('active');
+    Promise.all([document.fonts.ready, ...loads]).then(() => setTimeout(() => window.__ready = true, 400));
+    return;
+  }
+
+  const sweep = document.createElement('div'); sweep.id = 'sweep'; sweep.innerHTML = '<i class="sa"></i><i class="sb"></i>'; stage.appendChild(sweep);
+  cur = Math.max(0, Math.min(N - 1, (parseInt(location.hash.slice(1)) || 1) - 1));
+  const seen = new Set();
+  const enter = s => { const was = seen.has(s); s.classList.toggle('seen', was); seen.add(s); };
+  const at = () => send({type: 'at', i: cur, left: pending(slides[cur]).length});
+  for (let j = 0; j <= cur; j++) renderHud(j, true);
+  slides[cur].classList.add('active'); enter(slides[cur]);
+  document.fonts.ready.then(() => placeCue(1.2));
+
+  const go = to => {
+    if (busy || to < 0 || to >= N || to === cur) return;
+    busy = true; cue.hidden = true;
+    const from = slides[cur], next = slides[to], fwd = to > cur;
+    const same = lvOf(from) && lvOf(from) === lvOf(next) && lvOf(from) < 4;
+    const done = () => { pending(from).forEach(g => reveal(from, g)); busy = false; placeCue(same ? .7 : 1.1); };
+    if (same) {   // same board: content swaps, frame + HUD stay
+      from.classList.add('moving', 'st-out'); next.classList.add('moving', 'st-in');
+      next.style.setProperty('--b', '.22s'); next.classList.add('active'); enter(next);
+      setTimeout(() => { from.classList.remove('active', 'moving', 'st-out'); next.classList.remove('moving', 'st-in'); done(); }, 400);
+    } else {      // new place: the colour band sweeps across
+      const cc = getComputedStyle(next).getPropertyValue('--cc').trim() || '#1C1814';
+      sweep.style.setProperty('--sc', cc);
+      sweep.style.setProperty('--sd', /^#1c1814$/i.test(cc) ? 'var(--gold)' : 'var(--ink)');
+      sweep.className = ''; void sweep.offsetWidth; sweep.className = fwd ? 'fwd' : 'back';
+      from.classList.add('moving', fwd ? 'out-l' : 'out-r');
+      next.classList.add('moving', fwd ? 'in-r' : 'in-l');
+      next.style.setProperty('--b', '.5s'); next.classList.add('active'); enter(next);
+      setTimeout(() => {
+        from.classList.remove('active', 'moving', 'out-l', 'out-r'); next.classList.remove('moving', 'in-r', 'in-l');
+        sweep.className = ''; done();
+      }, 1000);
+    }
+    cur = to; renderHud(cur); history.replaceState(null, '', '#' + (cur + 1)); at();
+  };
+  const advance = () => {
+    if (busy) return;
+    const s = slides[cur], p = pending(s);
+    if (p.length) { reveal(s, p[0]); placeCue(.55); at(); } else go(cur + 1);
+  };
+
+  addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('input,textarea')) return;
+    const k = e.key;
+    if (['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Enter'].includes(k)) { e.preventDefault(); advance(); }
+    else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); go(cur - 1); }
+    else if (k === 'Home') go(0); else if (k === 'End') go(N - 1);
+    else if (k === 'f' || k === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+    else if (k === 'p' || k === 'P') { window.open(location.pathname + '?presenter', 'presenter', 'width=1200,height=760'); setTimeout(at, 700); }
+    else if (k === 'e' || k === 'E') toggleEdit();
+  });
+  stage.addEventListener('click', e => {
+    const t = e.target.closest('[data-act],#cue,.hsteps button'); if (!t) return;
+    document.activeElement && document.activeElement.blur && document.activeElement.blur();
+    if (t === cue) return advance();
+    if (t.matches('.hsteps button')) {
+      if (t.classList.contains('lock')) return shake(t);
+      return go(idx(lvOf(slides[cur]), +t.dataset.s));
+    }
+    if (t.dataset.act === 'next') return advance();
+    if (t.dataset.act === 'enter') return t.classList.contains('locked') ? shake(t) : go(idx(+t.dataset.lv, 0));
+  });
+  listen(m => { if (m.type === 'go') m.d > 0 ? advance() : go(cur - 1); if (m.type === 'hello') at(); });
+  setTimeout(() => document.getElementById('hint').style.opacity = 0, 5000);
+
+  // ---- edit mode: E toggles; Replace or drop a photo on any frame; drag to reframe ----
+  let editing = false;
+  const emsg = document.getElementById('emsg'), say = t => emsg.textContent = t;
+  const toggleEdit = () => { editing = !editing; document.body.classList.toggle('editing', editing); say(''); };
+  document.getElementById('edone').onclick = toggleEdit;
+  phs.forEach(ph => ph.insertAdjacentHTML('beforeend', `<span class="eov"><button data-e="pick">+ Replace</button><button data-e="reset">Reset</button><em>${ph.dataset.slot}</em></span>`));
+  const picker = Object.assign(document.createElement('input'), {type: 'file', accept: 'image/*'});
+  let target = null;
+  const setSlot = async (ph, file) => {
+    if (!file || !/^image\//.test(file.type)) return say('That file is not an image.');
+    const old = await DB.get(ph.dataset.slot);
+    ph.classList.remove('ai');
+    const bad = await show(ph, URL.createObjectURL(file), old && old.pos);
+    if (bad) return say(`Chrome can't open ${file.name} (HEIC?). Export it as JPG and try again.`);
+    await DB.put(ph.dataset.slot, {blob: file, pos: (old && old.pos) || null});
+    say(`${ph.dataset.slot} updated and kept in this browser. Click "Save to images folder" so the PDF export gets it too.`);
+  };
+  picker.onchange = () => { if (target && picker.files[0]) setSlot(target, picker.files[0]); picker.value = ''; };
+  stage.addEventListener('click', e => {
+    const b = e.target.closest('.eov button'); if (!b || !editing) return;
+    e.stopPropagation(); const ph = b.closest('.ph');
+    if (b.dataset.e === 'pick') { target = ph; picker.click(); }
+    else DB.del(ph.dataset.slot).then(() => loadPh(ph, {})).then(() => say(`${ph.dataset.slot} reset to the file in images/.`));
+  }, true);
+  addEventListener('dragover', e => { e.preventDefault(); const ph = e.target.closest && e.target.closest('.ph[data-slot]');
+    document.querySelectorAll('.ph.drop').forEach(p => p !== ph && p.classList.remove('drop')); if (ph) ph.classList.add('drop'); });
+  addEventListener('dragleave', e => { if (!e.relatedTarget) document.querySelectorAll('.ph.drop').forEach(p => p.classList.remove('drop')); });
+  addEventListener('drop', e => {
+    e.preventDefault(); document.querySelectorAll('.ph.drop').forEach(p => p.classList.remove('drop'));
+    const ph = e.target.closest && e.target.closest('.ph[data-slot]'), f = e.dataTransfer.files[0];
+    if (!ph || !f) return;
+    if (!editing) toggleEdit();
+    setSlot(ph, f);
+  });
+  stage.addEventListener('pointerdown', e => {
+    if (!editing || e.target.closest('.eov')) return;
+    const ph = e.target.closest('.ph[data-slot]'), img = ph && ph.querySelector('.kb img'); if (!img) return;
+    e.preventDefault(); e.stopPropagation();
+    const r = ph.getBoundingClientRect(), x0 = e.clientX, y0 = e.clientY;
+    const [px, py] = (img.style.objectPosition || '50% 50%').split(' ').map(parseFloat);
+    const cl = v => Math.max(0, Math.min(100, v));
+    const mv = ev => img.style.objectPosition = `${cl(px - (ev.clientX - x0) / r.width * 160).toFixed(1)}% ${cl(py - (ev.clientY - y0) / r.height * 160).toFixed(1)}%`;
+    const up = async () => {
+      removeEventListener('pointermove', mv); removeEventListener('pointerup', up);
+      const old = (await DB.get(ph.dataset.slot)) || {};
+      await DB.put(ph.dataset.slot, {...old, pos: img.style.objectPosition});
+      say(`Reframed ${ph.dataset.slot}.`);
+    };
+    addEventListener('pointermove', mv); addEventListener('pointerup', up);
+  }, true);
+  document.getElementById('esave').onclick = async () => {
+    const recs = await DB.all(), keys = Object.keys(recs);
+    if (!keys.length) return say('Nothing to save yet: replace or reframe a photo first.');
+    const pos = {...POS}; keys.forEach(k => { if (recs[k].pos) pos[k] = recs[k].pos; });
+    const js = `window.__POS = ${JSON.stringify(pos, null, 1)};\n`;
+    if (window.showDirectoryPicker) {
+      try {
+        const dir = await showDirectoryPicker({id: 'happiness-images', mode: 'readwrite'});
+        if (dir.name !== 'images') return say(`That folder is "${dir.name}". Pick the "images" folder inside sustainable-happiness-project.`);
+        const write = async (name, data) => { const w = await (await dir.getFileHandle(name, {create: true})).createWritable(); await w.write(data); await w.close(); };
+        let n = 0;
+        for (const k of keys) if (recs[k].blob) { await write(`${k}.jpg`, recs[k].blob); n++; }
+        await write('positions.js', js);
+        return say(`Saved ${n} photo${n === 1 ? '' : 's'} and the framing to images/. The PDF export will use them.`);
+      } catch (err) { if (err.name === 'AbortError') return say('Save cancelled.'); say(`Couldn't write there (${err.message}). Downloading the files instead.`); }
+    }
+    const dl = (name, blob) => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); };
+    keys.forEach(k => recs[k].blob && dl(`${k}.jpg`, recs[k].blob)); dl('positions.js', new Blob([js], {type: 'text/javascript'}));
+    say('Downloaded. Move these files into the project\'s images folder.');
+  };
+})();
+
+</script>
+</body>
+</html>

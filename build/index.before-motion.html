@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eleven Hours, Three Ways</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+:root{
+  --paper:#EEE5D1; --cream:#F8F1E2; --ink:#1C1814; --ink-2:#4A4038; --sand:#C9A46A;
+  --blood:#C9302C; --saffron:#EA8F22; --green:#1F5C38; --sky:#3F7FA6; --gold:#E9B93A; --pink:#F2A49C;
+  --display:"Anton",Impact,sans-serif; --body:"Geist",system-ui,sans-serif;
+  --push:cubic-bezier(.76,0,.24,1); --k:.3; --kt:.55; --out:cubic-bezier(.2,.8,.2,1); --spring:cubic-bezier(.3,1.5,.5,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#111;overflow:hidden}
+body{font-family:var(--body);color:var(--ink);-webkit-font-smoothing:antialiased}
+#viewport{position:fixed;inset:0;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;overflow:hidden;background:#111;transform-origin:50% 50%}
+
+/* ---------- slides + push / parallax transition ---------- */
+.slide{position:absolute;inset:0;background:var(--paper);overflow:hidden;visibility:hidden}
+.slide.active,.slide.moving{visibility:visible}
+.slide .bg,.slide .fg{position:absolute;inset:0}
+.slide::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:60;mix-blend-mode:multiply;opacity:.5;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='300' height='300'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .3  0 0 0 0 .24  0 0 0 0 .16  0 0 0 .5 0'/></filter><rect width='300' height='300' filter='url(%23n)' opacity='.6'/></svg>")}
+.out-l{animation:outL .7s var(--push) forwards}.in-r{animation:inR .7s var(--push) forwards}
+.out-r{animation:outR .7s var(--push) forwards}.in-l{animation:inL .7s var(--push) forwards}
+.in-r>.fg{animation:pxInR .7s var(--push) forwards}.in-l>.fg{animation:pxInL .7s var(--push) forwards}
+.out-l>.fg{animation:pxOutL .7s var(--push) forwards}.out-r>.fg{animation:pxOutR .7s var(--push) forwards}
+@keyframes outL{to{transform:translateX(-100%)}} @keyframes inR{from{transform:translateX(100%)}to{transform:none}}
+@keyframes outR{to{transform:translateX(100%)}} @keyframes inL{from{transform:translateX(-100%)}to{transform:none}}
+@keyframes pxInR{from{transform:translateX(420px)}to{transform:none}} @keyframes pxInL{from{transform:translateX(-420px)}to{transform:none}}
+@keyframes pxOutL{to{transform:translateX(-300px)}} @keyframes pxOutR{to{transform:translateX(300px)}}
+
+/* ---------- linocut colour ---------- */
+.blk{position:absolute;filter:url(#lino)}
+.blk::after{content:"";position:absolute;inset:0;mix-blend-mode:screen;opacity:.22;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='260' height='260'><filter id='s'><feTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 -9 4.2'/></filter><rect width='260' height='260' filter='url(%23s)'/></svg>")}
+.pb{position:relative;isolation:isolate}
+.pb::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--c);filter:url(#lino)}
+
+/* ---------- choreography (each slide uses its own moves) ---------- */
+.a{opacity:0}
+.slide.active .a{animation-duration:calc(var(--t,.8s)*var(--kt));animation-timing-function:var(--out);animation-fill-mode:both;animation-delay:calc(var(--d,0s)*var(--k) + var(--b,.2s))}
+.slide.active .wipe{animation-name:wipeR;animation-timing-function:var(--push);--t:.9s}
+.slide.active .wipe-l{animation-name:wipeL;animation-timing-function:var(--push);--t:.9s}
+.slide.active .wipe-u{animation-name:wipeU;animation-timing-function:var(--push);--t:1.1s}
+.slide.active .wipe-d{animation-name:wipeD;animation-timing-function:var(--push);--t:1s}
+.slide.active .iris{animation-name:iris;animation-timing-function:cubic-bezier(.6,0,.3,1);--t:1.3s}
+.slide.active .shutter-t{animation-name:shutT;animation-timing-function:var(--push);--t:.9s}
+.slide.active .shutter-b{animation-name:shutB;animation-timing-function:var(--push);--t:.9s}
+.slide.active .rise{animation-name:rise}
+.slide.active .fade{animation-name:fade}
+.slide.active .stamp{animation-name:stamp;--t:.5s;animation-timing-function:cubic-bezier(.5,0,.3,1.4)}
+.slide.active .pop{animation-name:pop;--t:.7s;animation-timing-function:var(--spring)}
+.slide.active .hang{animation-name:hang;--t:.9s;animation-timing-function:var(--spring)}
+.slide.active .flip{animation-name:flip;--t:1s;animation-timing-function:cubic-bezier(.2,1.2,.4,1)}
+.slide.active .deal{animation-name:deal;--t:.9s;animation-timing-function:cubic-bezier(.2,.9,.3,1.05)}
+.slide.active .corner{animation-name:corner;--t:.9s;animation-timing-function:cubic-bezier(.2,.9,.25,1)}
+.slide.active .swing{animation-name:swing;--t:1.8s;animation-timing-function:ease-out;transform-origin:50% 0}
+.slide.active .tile{animation-name:tile;--t:.7s;animation-timing-function:var(--push)}
+.slide.active .from-r{animation-name:fromR;--t:.8s}
+.slide.active .from-l{animation-name:fromL;--t:.8s}
+.slide.active .from-t{animation-name:fromT;--t:.9s}
+.slide.active .from-b{animation-name:fromB;--t:.9s}
+.slide.active .behind{animation-name:behind;--t:.9s;animation-timing-function:var(--push)}
+.slide.active .light{animation-name:light;--t:.5s}
+.slide.active .zoom{animation-name:zoom;--t:1.1s;animation-timing-function:cubic-bezier(.2,.9,.2,1)}
+.slide.active .track{animation-name:track;--t:1.2s;animation-timing-function:cubic-bezier(.2,.9,.2,1)}
+.slide.active .fall{animation-name:fall;--t:1s;animation-timing-function:cubic-bezier(.4,0,.6,1.35)}
+@keyframes wipeR{from{opacity:1;clip-path:inset(0 100% 0 0)}to{opacity:1;clip-path:inset(-60%)}}
+@keyframes wipeL{from{opacity:1;clip-path:inset(0 0 0 100%)}to{opacity:1;clip-path:inset(-60%)}}
+@keyframes wipeU{from{opacity:1;clip-path:inset(100% 0 0 0)}to{opacity:1;clip-path:inset(-60%)}}
+@keyframes wipeD{from{opacity:1;clip-path:inset(0 0 100% 0)}to{opacity:1;clip-path:inset(-60%)}}
+@keyframes iris{from{opacity:1;clip-path:circle(0% at var(--ix,50%) var(--iy,50%))}to{opacity:1;clip-path:circle(150% at var(--ix,50%) var(--iy,50%))}}
+@keyframes shutT{from{opacity:1;transform:translateY(-100%)}to{opacity:1;transform:none}}
+@keyframes shutB{from{opacity:1;transform:translateY(100%)}to{opacity:1;transform:none}}
+@keyframes rise{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes stamp{0%{opacity:0;transform:scale(1.7) rotate(calc(var(--r,0deg) - 8deg))}100%{opacity:1;transform:scale(1) rotate(var(--r,0deg))}}
+@keyframes pop{0%{opacity:0;transform:scale(.1) rotate(-25deg)}100%{opacity:1;transform:scale(1) rotate(var(--r,0deg))}}
+@keyframes hang{0%{opacity:0;transform:translateY(-70px) rotate(-6deg)}100%{opacity:1;transform:none}}
+@keyframes flip{0%{opacity:0;transform:perspective(1400px) rotateX(-95deg)}30%{opacity:1}100%{opacity:1;transform:perspective(1400px) rotateX(0)}}
+@keyframes deal{0%{opacity:0;transform:translate(var(--fx,0),700px) rotate(var(--fr,0deg)) scale(.85)}100%{opacity:1;transform:none}}
+@keyframes corner{0%{opacity:0;transform:translate(var(--fx),var(--fy)) rotate(var(--fr,0deg))}100%{opacity:1;transform:none}}
+@keyframes swing{0%{opacity:0;transform:translateY(-120px) rotate(14deg)}25%{opacity:1;transform:rotate(-9deg)}45%{transform:rotate(5deg)}65%{transform:rotate(-2.5deg)}82%{transform:rotate(1deg)}100%{opacity:1;transform:rotate(var(--r,0deg))}}
+@keyframes tile{0%{opacity:1;transform:perspective(1200px) rotateY(var(--ty,90deg))}100%{opacity:1;transform:none}}
+@keyframes fromR{from{opacity:0;transform:translateX(160px)}to{opacity:1;transform:none}}
+@keyframes fromL{from{opacity:0;transform:translateX(-160px)}to{opacity:1;transform:none}}
+@keyframes fromT{from{opacity:0;transform:translateY(-200px)}to{opacity:1;transform:none}}
+@keyframes fromB{from{opacity:0;transform:translateY(200px)}to{opacity:1;transform:none}}
+@keyframes behind{from{opacity:1;transform:translateX(-340px);clip-path:inset(0 0 0 340px)}to{opacity:1;transform:none;clip-path:inset(-60%)}}
+@keyframes light{from{opacity:.18;transform:scale(.9)}60%{opacity:1;transform:scale(1.1)}to{opacity:1;transform:none}}
+@keyframes zoom{from{opacity:0;transform:scale(1.9)}to{opacity:1;transform:none}}
+@keyframes track{from{opacity:0;letter-spacing:.5em}to{opacity:1;letter-spacing:.005em}}
+@keyframes fall{0%{opacity:1;transform:translateY(-700px)}100%{opacity:1;transform:rotate(var(--r,0deg))}}
+.stamp,.pop,.swing,.fall{transform:rotate(var(--r,0deg))}
+.light{opacity:.18}
+
+/* headline lines rise out of a mask (variants per slide) */
+.ln{display:block;overflow:hidden;padding-bottom:.05em;margin-bottom:-.05em}
+.ln>span{display:block;transform:translateY(108%)}
+.ln.dn>span{transform:translateY(-108%)}
+.ln.sd>span{transform:translateX(-104%)}
+.slide.active .ln>span{animation:lnIn calc(.85s*var(--kt)) var(--out) calc(var(--d,0s)*var(--k) + var(--b,.2s)) forwards}
+@keyframes lnIn{to{transform:none}}
+/* word-by-word */
+.wd{display:inline-block;opacity:0;transform:translateY(40px) scale(.7)}
+.slide.active .wd{animation:wd calc(.55s*var(--kt)) var(--spring) calc(var(--d,0s)*var(--k) + var(--b,.2s)) forwards}
+@keyframes wd{to{opacity:1;transform:none}}
+/* marker swipe behind key phrases */
+.mark{background:linear-gradient(var(--mc,var(--gold)),var(--mc,var(--gold))) 0 88%/0% 38% no-repeat;padding:0 .1em}
+.slide.active .mark{animation:mark calc(.7s*var(--kt)) var(--push) calc(var(--d,0s)*var(--k) + var(--b,.2s)) forwards}
+@keyframes mark{to{background-size:100% 38%}}
+/* ink lines draw on */
+.draw{stroke-dasharray:1;stroke-dashoffset:1}
+.slide.active .draw{animation:draw calc(var(--t,1s)*var(--kt)) var(--push) calc(var(--d,0s)*var(--k) + var(--b,.2s)) forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* revisiting a slide: show it finished, no replay (loops keep going) */
+.slide.seen *:not(.loop){animation-duration:1ms!important;animation-delay:0ms!important;transition:none!important}
+
+/* ---------- type ---------- */
+.disp{font-family:var(--display);font-weight:400;text-transform:uppercase;line-height:.9;letter-spacing:.005em}
+.lbl{font:700 24px/1 var(--body);letter-spacing:.1em;text-transform:uppercase}
+.body{font:450 27px/1.38 var(--body)}
+.cite{font:600 17px/1.35 var(--body);letter-spacing:.02em;color:var(--ink-2)}
+.cite b{color:var(--ink)}
+.abs{position:absolute}
+
+/* ---------- components ---------- */
+.badge{position:absolute;display:grid;place-items:center;width:var(--s,150px);height:var(--s,150px);border-radius:50%;background:var(--cream);border:5px solid var(--ink);box-shadow:var(--sh,8px) var(--sh,8px) 0 var(--ink)}
+.badge.rel{position:relative;flex:none}
+.badge svg{width:66%;height:66%;overflow:visible;fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.frame{position:absolute;background:var(--cream);border:5px solid var(--ink);padding:12px;box-shadow:12px 12px 0 var(--ink)}
+.ph{position:relative;overflow:hidden;background:#D9CDB4}
+.ph img,.ph video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scale(1.12)}
+.ph.contain img{object-fit:contain;background:var(--cream);transform:none}
+.slide.active .ph img{transition:transform 7s cubic-bezier(.2,.6,.2,1);transform:scale(1)}
+.ph.missing{background:radial-gradient(circle,rgba(28,24,20,.2) 2.2px,transparent 2.6px) 0 0/16px 16px,#E2D6BE;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
+.ph.missing::before{content:"ADD PHOTO";font:800 22px/1 var(--body);letter-spacing:.16em;background:var(--ink);color:var(--cream);padding:9px 14px}
+.ph.missing.cert::before{content:"ADD CERTIFICATE"}
+.ph.missing.vid::before{content:"ADD VIDEO"}
+.ph.missing::after{content:attr(data-label);font:600 23px/1.25 var(--body);color:var(--ink-2);max-width:82%}
+.tab{position:absolute;left:-5px;top:-52px;padding:12px 18px 10px;color:var(--cream);background:var(--tc,var(--ink));font:800 22px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;border:5px solid var(--ink);border-bottom:0}
+.tag{position:absolute;left:12px;bottom:12px;padding:10px 14px 8px;color:var(--cream);background:var(--tc,var(--ink));font:800 20px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;z-index:2}
+.panel{position:absolute;background:var(--cream);border:5px solid var(--ink);box-shadow:12px 12px 0 var(--ink);overflow:hidden}
+.panel .hd{display:flex;align-items:center;gap:14px;padding:16px 22px;color:var(--cream);background:var(--pc)}
+.research{background:color-mix(in srgb,var(--pc) 13%,var(--cream));border-top:4px solid var(--ink);padding:20px 24px}
+.research .rs{font:800 16px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--pc);margin-bottom:10px}
+.research p{font:450 22px/1.36 var(--body)}
+.research .cite{margin-top:10px}
+
+/* ---------- activity slides (did / impact / learned / research) ---------- */
+.tracker{position:absolute;top:60px;display:flex;gap:8px;z-index:5}
+.tracker span{display:flex;align-items:center;height:46px;padding:0 16px;font:800 16px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;background:var(--cream);color:rgba(28,24,20,.42);border:4px solid var(--ink);white-space:nowrap}
+.tracker span.act{background:var(--ink);color:var(--cream)}
+.tracker span.done{color:var(--ink)}
+.tracker span.on{background:var(--tc);color:var(--tt,var(--cream))}
+.lcard{position:absolute;width:1060px;height:150px;display:flex;gap:26px;align-items:center;padding:0 30px;background:var(--cream);border:5px solid var(--ink);border-left:18px solid var(--pc);box-shadow:10px 10px 0 var(--ink);transform-origin:50% 0}
+.lcard .lbl{font-size:17px;color:var(--ink-2)}
+.lcard p{font:450 25px/1.35 var(--body);margin-top:8px}
+.chip{display:inline-flex;align-items:center;gap:10px;padding:10px 16px 9px;font:800 18px/1 var(--body);letter-spacing:.1em;text-transform:uppercase}
+.chip svg{width:34px;height:34px;fill:none;stroke:currentColor;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;overflow:visible}
+.scard{position:absolute;width:515px;height:255px;background:var(--cream);border:5px solid var(--ink);box-shadow:10px 10px 0 var(--ink)}
+.scard .hd{padding:14px 20px;background:var(--pc);color:var(--cream);font:800 16px/1.3 var(--body);letter-spacing:.06em}
+.scard p{padding:18px 22px;font:450 25px/1.38 var(--body)}
+.lq{position:absolute;width:520px;height:250px;padding:30px;display:flex;gap:22px;align-items:flex-start}
+.lq .lbl{font-size:17px;opacity:.75}
+.lq p{font:450 24px/1.35 var(--body);margin-top:10px}
+.pill{position:absolute;left:120px;width:380px;height:120px;display:flex;align-items:center;gap:18px;padding:0 22px}
+.pill .disp{font-size:34px;line-height:.95}
+.rcard{position:absolute;left:650px;width:530px;height:150px;padding:16px 22px;background:var(--cream);border:5px solid var(--ink);border-left:14px solid var(--pc);box-shadow:8px 8px 0 var(--ink)}
+.rcard p{font:450 20px/1.35 var(--body);margin-top:6px}
+.col{position:absolute;top:430px;width:330px;height:510px;background:var(--cream);border:5px solid var(--ink);box-shadow:10px 10px 0 var(--ink)}
+.col .hd{display:flex;align-items:center;gap:16px;padding:18px 20px;background:var(--pc);color:var(--tt,var(--cream))}
+.col .lbl{font-size:20px}
+.col p{padding:24px;font:450 26px/1.4 var(--body)}
+.rblock{position:absolute;left:120px;width:1060px;height:170px;padding:20px 28px;background:var(--cream);border:5px solid var(--ink);border-left:16px solid var(--green);box-shadow:10px 10px 0 var(--ink)}
+.rblock p{font:450 25px/1.38 var(--body);margin-top:8px}
+
+/* chrome */
+.speaker{position:absolute;left:0;bottom:42px;z-index:40;padding:10px 20px 8px 60px;background:var(--ink);color:var(--cream);font:800 20px/1 var(--body);letter-spacing:.16em}
+.speaker .dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--c);margin-right:10px;vertical-align:1px}
+.folio{position:absolute;right:60px;bottom:46px;z-index:40;font:800 20px/1 var(--body);letter-spacing:.16em;color:var(--fc,var(--ink-2))}
+.notes{display:none}
+#hint{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);font:600 13px/1 var(--body);color:rgba(255,255,255,.5);letter-spacing:.1em;transition:opacity 1s;pointer-events:none}
+body.static #hint{display:none}
+body.static .slide *{animation-duration:1ms!important;animation-delay:0ms!important;animation-iteration-count:1!important;transition:none!important}
+
+/* presenter window */
+#presenter{display:none;position:fixed;inset:0;background:#15120f;color:var(--cream);padding:36px 44px;grid-template-columns:1fr 380px;gap:36px}
+body.presenter #viewport,body.presenter #hint{display:none}
+body.presenter #presenter{display:grid}
+#presenter .k{font:800 15px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;opacity:.6}
+#presenter h1{font:400 48px/1 var(--display);text-transform:uppercase;margin:14px 0 24px}
+#pnotes{font:450 30px/1.5 var(--body);max-width:62ch}
+#presenter .side{border-left:1px solid rgba(255,255,255,.15);padding-left:32px;display:flex;flex-direction:column;gap:26px}
+#ptimer{font:400 84px/1 var(--display)}
+#ptimer.over{color:#ff6b5e}
+#presenter .small{font-size:16px;opacity:.7;line-height:1.5}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <filter id="lino" x="-3%" y="-3%" width="106%" height="106%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="3" seed="11"/><feDisplacementMap in="SourceGraphic" scale="9"/></filter>
+  <symbol id="i-drop" viewBox="0 0 64 64"><path d="M32 4S10 29 10 42a22 22 0 0 0 44 0C54 29 32 4 32 4z" style="fill:var(--blood)"/><path d="M19 40a12 12 0 0 0 5 10" style="stroke:var(--cream)"/><circle cx="26" cy="40" r="2.6" style="fill:var(--ink);stroke:none"/><circle cx="39" cy="40" r="2.6" style="fill:var(--ink);stroke:none"/><path d="M27 48c3 3 8 3 11 0"/></symbol>
+  <symbol id="i-bowl" viewBox="0 0 64 64"><path d="M5 32h54a27 24 0 0 1-54 0z" style="fill:var(--saffron)"/><path d="M5 32h54"/><path d="M22 60h20"/><path d="M22 24c-4-5 4-8 0-15M32 24c-4-5 4-8 0-15M42 24c-4-5 4-8 0-15"/></symbol>
+  <symbol id="i-medal" viewBox="0 0 64 64"><path d="M18 3l8 22h12l8-22h-10l-4 11-4-11z" style="fill:var(--green)"/><circle cx="32" cy="43" r="17" style="fill:var(--gold)"/><path d="M32 34l2.8 5.6 6.2.9-4.5 4.4 1 6.1-5.5-2.9-5.5 2.9 1-6.1-4.5-4.4 6.2-.9z" style="fill:var(--cream)"/></symbol>
+  <symbol id="i-form" viewBox="0 0 64 64"><rect x="12" y="9" width="40" height="51" rx="5" style="fill:var(--cream)"/><rect x="22" y="4" width="20" height="10" rx="3" style="fill:var(--sky)"/><path d="M21 26h22M21 35h22M21 44h12"/><path d="M37 46l4 4 8-9" style="stroke:var(--green)"/></symbol>
+  <symbol id="i-vitals" viewBox="0 0 64 64"><path d="M32 57C13 43 5 33 5 21 5 12 12 6 20 6c6 0 10 4 12 8 2-4 6-8 12-8 8 0 15 6 15 15 0 12-8 22-27 36z" style="fill:var(--pink)"/><path d="M8 31h13l4-8 6 16 5-12 3 4h17"/></symbol>
+  <symbol id="i-cup" viewBox="0 0 64 64"><path d="M10 26h36v13a15 15 0 0 1-15 15h-6A15 15 0 0 1 10 39z" style="fill:var(--saffron)"/><path d="M46 30h4a7 7 0 0 1 0 14h-5"/><path d="M8 60h40"/><path d="M22 18c-3-4 3-6 0-11M33 18c-3-4 3-6 0-11"/></symbol>
+  <symbol id="i-pot" viewBox="0 0 64 64"><path d="M10 28h44v20a9 9 0 0 1-9 9H19a9 9 0 0 1-9-9z" style="fill:var(--saffron)"/><path d="M6 28h52M10 34H4M54 34h6M24 21h16M32 21v-5"/></symbol>
+  <symbol id="i-ladle" viewBox="0 0 64 64"><path d="M52 5L33 33" style="stroke-width:6"/><path d="M8 33h32a16 13 0 0 1-32 0z" style="fill:var(--saffron)"/><path d="M14 54c4 4 8 4 12 0" style="stroke:var(--saffron)"/></symbol>
+  <symbol id="i-pangat" viewBox="0 0 64 64"><path d="M2 56h60"/><circle cx="13" cy="25" r="6" style="fill:var(--cream)"/><circle cx="32" cy="22" r="6" style="fill:var(--cream)"/><circle cx="51" cy="25" r="6" style="fill:var(--cream)"/><path d="M3 52a10 10 0 0 1 20 0z" style="fill:var(--saffron)"/><path d="M22 50a10 10 0 0 1 20 0z" style="fill:var(--blood)"/><path d="M41 52a10 10 0 0 1 20 0z" style="fill:var(--green)"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 64 64"><path d="M32 57C13 43 5 33 5 21 5 12 12 6 20 6c6 0 10 4 12 8 2-4 6-8 12-8 8 0 15 6 15 15 0 12-8 22-27 36z" style="fill:var(--blood)"/><path d="M15 20a7 7 0 0 1 6-6" style="stroke:var(--cream)"/></symbol>
+  <symbol id="i-sign" viewBox="0 0 64 64"><path d="M30 62V6"/><path d="M12 10h32l9 8-9 8H12z" style="fill:var(--gold)"/><path d="M48 32H17l-8 8 8 8h31z" style="fill:var(--sky)"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 64 64"><path d="M10 62V4"/><rect x="12" y="8" width="10" height="28" style="fill:#C8102E"/><rect x="22" y="8" width="34" height="9.3" style="fill:#00843D"/><rect x="22" y="17.3" width="34" height="9.3" style="fill:#fff"/><rect x="22" y="26.6" width="34" height="9.4" style="fill:var(--ink)"/><rect x="12" y="8" width="44" height="28"/></symbol>
+  <symbol id="i-water" viewBox="0 0 64 64"><path d="M25 3h14v8l6 7v38a5 5 0 0 1-5 5H24a5 5 0 0 1-5-5V18l6-7z" style="fill:#9CC7E0"/><path d="M19 32c5-3 9 3 13 0s9-3 13 0"/><path d="M25 3h14"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 64 64"><path d="M28 4c2 15 6 20 20 22-14 2-18 8-20 22-2-14-6-20-20-22 14-2 18-7 20-22z" style="fill:var(--gold)"/><path d="M50 40c1 6 3 8 8 9-5 1-7 3-8 9-1-6-3-8-8-9 5-1 7-3 8-9z" style="fill:var(--cream)"/></symbol>
+  <symbol id="i-mountain" viewBox="0 0 64 64"><path d="M3 58L24 22l10 14 8-12 19 34z" style="fill:var(--sand)"/><path d="M24 22l-6 10 6 3 5-5z" style="fill:var(--cream)"/><path d="M42 24V8l10 4-10 4" style="fill:var(--blood)"/></symbol>
+  <symbol id="i-sprout" viewBox="0 0 64 64"><path d="M32 58V30"/><path d="M32 36C18 36 12 27 12 16c13 0 20 8 20 20z" style="fill:#5FA36F"/><path d="M32 30c0-12 7-20 21-20 0 12-7 20-21 20z" style="fill:#5FA36F"/><path d="M14 58h36"/></symbol>
+  <symbol id="i-kind" viewBox="0 0 64 64"><path d="M32 30c-9-6-13-10-13-15a6.5 6.5 0 0 1 13-2 6.5 6.5 0 0 1 13 2c0 5-4 9-13 15z" style="fill:var(--blood)"/><path d="M4 34c5 0 9 3 11 7l4 7c2 4 6 7 11 7h4c5 0 9-3 11-7l4-7c2-4 6-7 11-7" style="fill:var(--sand)"/></symbol>
+  <symbol id="i-people" viewBox="0 0 64 64"><circle cx="21" cy="20" r="9" style="fill:var(--cream)"/><circle cx="43" cy="20" r="9" style="fill:var(--cream)"/><path d="M5 58a16 16 0 0 1 32 0z" style="fill:var(--saffron)"/><path d="M27 58a16 16 0 0 1 32 0z" style="fill:var(--green)"/></symbol>
+  <symbol id="i-thanks" viewBox="0 0 64 64"><path d="M6 8h52v34H30L16 56V42H6z" style="fill:var(--cream)"/><path d="M32 36c-8-5-12-9-12-13a5.5 5.5 0 0 1 12-2 5.5 5.5 0 0 1 12 2c0 4-4 8-12 13z" style="fill:var(--blood)"/></symbol>
+  <symbol id="i-lotus" viewBox="0 0 64 64"><path d="M32 12c8 9 8 27 0 38-8-11-8-29 0-38z" style="fill:var(--pink)"/><path d="M32 50C20 49 8 40 6 26c13 1 22 10 26 24z" style="fill:var(--saffron)"/><path d="M32 50c12-1 24-10 26-24-13 1-22 10-26 24z" style="fill:var(--saffron)"/><path d="M12 58h40"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 64 64"><circle cx="32" cy="32" r="13" style="fill:var(--gold)"/><path d="M32 4v8M32 52v8M4 32h8M52 32h8M12 12l6 6M46 46l6 6M12 52l6-6M46 18l6-6"/></symbol>
+  <symbol id="i-breath" viewBox="0 0 64 64"><circle cx="32" cy="32" r="27" style="fill:#CFE2EE"/><path d="M12 24c5-4 10 4 15 0s10-4 15 0 8 2 10 0M12 34c5-4 10 4 15 0s10-4 15 0 8 2 10 0M16 44c4-3 8 3 12 0s8-3 12 0 6 2 8 0" style="stroke:var(--sky)"/></symbol>
+  <symbol id="i-book" viewBox="0 0 64 64"><path d="M32 14C25 9 14 8 5 10v42c9-2 20-1 27 4 7-5 18-6 27-4V10c-9-2-20-1-27 4z" style="fill:var(--cream)"/><path d="M32 14v42M12 22c5-1 10 0 13 2M12 31c5-1 10 0 13 2M39 24c3-2 8-3 13-2"/></symbol>
+  <symbol id="i-lens" viewBox="0 0 64 64"><circle cx="26" cy="26" r="18" style="fill:#CFE2EE"/><path d="M39 39l18 18" style="stroke-width:7"/><path d="M17 22a10 10 0 0 1 7-6" style="stroke:var(--cream)"/></symbol>
+  <symbol id="i-walk" viewBox="0 0 64 64"><circle cx="32" cy="9" r="6" style="fill:var(--saffron)"/><path d="M32 18l-2 19M30 37l-8 21M30 37l9 21M31 23l-10 11M31 23l11 9" style="stroke-width:5"/><path d="M44 32l4 26" style="stroke:var(--sand);stroke-width:4"/></symbol>
+  <symbol id="i-run" viewBox="0 0 64 64"><circle cx="42" cy="9" r="6" style="fill:var(--blood)"/><path d="M38 18l-7 18M31 36l-12 6-6 12M31 36l13 7v15M37 23l-14 1M37 23l10 11" style="stroke-width:5"/></symbol>
+  <symbol id="i-wheel" viewBox="0 0 64 64"><circle cx="26" cy="9" r="6" style="fill:var(--green)"/><circle cx="25" cy="46" r="14" style="fill:#CFE2EE"/><path d="M26 18v18h15l7 17M26 26h12" style="stroke-width:5"/><circle cx="25" cy="46" r="3" style="fill:var(--ink)"/></symbol>
+  <symbol id="i-baton" viewBox="0 0 64 64"><rect x="8" y="24" width="48" height="16" rx="8" transform="rotate(-30 32 32)" style="fill:var(--gold)"/><path d="M20 46l26-15" style="stroke:var(--cream)"/></symbol>
+</defs></svg>
+
+<div id="viewport"><div id="stage">
+
+<!-- ================= 01 TITLE ================= -->
+<section class="slide" data-speaker="Vedansh" data-title="11 hours, 3 ways to give">
+  <div class="blk a wipe-l" style="left:1130px;top:-20px;width:830px;height:1120px;background:var(--blood)"></div>
+  <svg class="abs" style="left:1130px;top:0;width:790px;height:1080px" viewBox="0 0 790 1080"><path class="draw" pathLength="1" style="--d:.7s;--t:1.4s" d="M280 250C560 300 650 420 520 520S200 640 300 840" fill="none" stroke="var(--cream)" stroke-width="9" stroke-linecap="round"/></svg>
+  <div class="badge a pop" style="--s:220px;left:1300px;top:120px;--d:.6s;--r:-6deg"><svg viewBox="0 0 64 64"><use href="#i-drop"/></svg></div>
+  <div class="badge a pop" style="--s:220px;left:1560px;top:410px;--d:.95s;--r:5deg"><svg viewBox="0 0 64 64"><use href="#i-bowl"/></svg></div>
+  <div class="badge a pop" style="--s:220px;left:1320px;top:730px;--d:1.3s;--r:-3deg"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div>
+  <div class="abs lbl a rise" style="left:120px;top:120px;color:var(--ink-2)">Science of Sustainable Happiness — Assignment 2</div>
+  <h1 class="abs disp" style="left:112px;top:180px;font-size:212px">
+    <span class="ln" style="--d:.1s"><span>11 Hours.</span></span>
+    <span class="ln" style="--d:.22s"><span>3 Ways</span></span>
+    <span class="ln" style="--d:.34s"><span>to <span style="color:var(--blood)">give.</span></span></span>
+  </h1>
+  <p class="abs body a rise" style="left:120px;top:780px;font-size:34px;font-weight:500;--d:.8s">A blood drive · a langar kitchen · a pre-dawn unity run</p>
+  <div class="abs a rise" style="left:120px;top:880px;display:flex;gap:18px;align-items:stretch;--d:1s">
+    <div class="pb" style="--c:var(--ink);color:var(--cream);padding:16px 24px 14px"><div class="disp" style="font-size:40px">Tohraan Khan</div><div class="lbl" style="font-size:17px;opacity:.7;margin-top:6px">ID 20250304</div></div>
+    <div class="pb" style="--c:var(--ink);color:var(--cream);padding:16px 24px 14px"><div class="disp" style="font-size:40px">Vedansh Dholakia</div><div class="lbl" style="font-size:17px;opacity:.7;margin-top:6px">ID 20250130</div></div>
+    <div class="lbl" style="align-self:center;font-size:19px;line-height:1.5;color:var(--ink-2)">BITS Pilani, Dubai Campus<br>November 2026</div>
+  </div>
+  <aside class="notes">Good morning. I'm Vedansh, and this is Tohraan. Our sustainable happiness project is eleven hours of volunteering in three very different places: a blood donation camp, a gurudwara kitchen and a community run.</aside>
+</section>
+
+<!-- ================= 02 OVERVIEW ================= -->
+<section class="slide" data-speaker="Vedansh" data-title="Three stops, one community">
+  <div class="abs lbl a fade" style="left:120px;top:110px;color:var(--ink-2)">What was the work?</div>
+  <h2 class="abs disp" style="left:116px;top:160px;font-size:150px">
+    <span class="a track" style="display:block;--d:.05s">Three stops.</span>
+    <span class="a track" style="display:block;color:var(--blood);--d:.25s">One community.</span>
+  </h2>
+  <div class="abs" style="right:120px;top:96px;text-align:right">
+    <div class="disp" style="font-size:250px;line-height:.85"><span data-count="11" style="--d:.3s">11</span></div>
+    <div class="lbl a fade" style="--d:.5s;font-size:26px">Hours logged</div>
+    <div class="a stamp" style="--d:1.9s;--r:-4deg;display:inline-block;margin-top:16px;border:5px solid var(--green);color:var(--green);padding:10px 16px 8px"><span class="lbl" style="font-size:20px">Min. 8 hrs ✓ · 3 activities ✓</span></div>
+  </div>
+  <div class="abs" style="left:120px;top:480px;width:1680px;height:110px;display:flex;gap:8px">
+    <div class="pb a wipe" style="flex:2;--c:var(--blood);--d:.6s;--t:.5s"><span class="disp abs" style="left:22px;top:22px;font-size:62px;color:var(--cream)">2H</span></div>
+    <div class="pb a wipe" style="flex:1;--c:var(--saffron);--d:1.05s;--t:.4s"><span class="disp abs" style="left:18px;top:22px;font-size:62px">1H</span></div>
+    <div class="pb a wipe" style="flex:8;--c:var(--green);--d:1.4s;--t:.9s"><span class="disp abs" style="left:24px;top:22px;font-size:62px;color:var(--cream)">8H</span></div>
+  </div>
+  <div class="abs" style="left:120px;top:660px;width:1680px;display:grid;grid-template-columns:repeat(3,1fr);gap:48px">
+    <div class="a hang" style="--d:.9s;display:flex;gap:26px">
+      <div class="badge rel" style="--s:120px;--sh:6px"><svg viewBox="0 0 64 64"><use href="#i-drop"/></svg></div>
+      <div><div class="lbl" style="color:var(--blood);font-size:20px">01 Oct 2026</div><div class="disp" style="font-size:52px;margin:8px 0">Blood Donation Camp</div><div class="body" style="font-size:23px;color:var(--ink-2)">MAD Club, BITS Pilani Dubai × Dubai Health</div></div>
+    </div>
+    <div class="a hang" style="--d:1.2s;display:flex;gap:26px">
+      <div class="badge rel" style="--s:120px;--sh:6px"><svg viewBox="0 0 64 64"><use href="#i-bowl"/></svg></div>
+      <div><div class="lbl" style="color:var(--saffron);font-size:20px">14 Nov 2026</div><div class="disp" style="font-size:52px;margin:8px 0">Langar Seva</div><div class="body" style="font-size:23px;color:var(--ink-2)">Guru Nanak Darbar Gurudwara, Jebel Ali</div></div>
+    </div>
+    <div class="a hang" style="--d:1.6s;display:flex;gap:26px">
+      <div class="badge rel" style="--s:120px;--sh:6px"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div>
+      <div><div class="lbl" style="color:var(--green);font-size:20px">15 Nov 2026</div><div class="disp" style="font-size:52px;margin:8px 0">Emirates NBD Unity Run</div><div class="body" style="font-size:23px;color:var(--ink-2)">FittGROUP · Dubai Design District</div></div>
+    </div>
+  </div>
+  <div class="abs body a fade" style="left:120px;top:952px;font-size:24px;--d:2.3s"><b>Who:</b> Tohraan &amp; Vedansh, together at every stop, with the same roles and the same hours.</div>
+  <aside class="notes">Two hours at a blood donation camp on the first of October, one hour of langar seva on the fourteenth of November, and eight hours at the Emirates NBD Unity Run the next day. We did every one together.</aside>
+</section>
+
+<!-- ================= 03 BLOOD · 01 DID ================= -->
+<section class="slide" data-speaker="Vedansh" data-title="Blood camp · 01 What we did">
+  <div class="blk a wipe-u" style="left:-40px;top:-20px;width:770px;height:1120px;background:var(--blood)"></div>
+  <div class="frame a from-b" style="left:110px;top:44px;--d:.75s"><div class="ph" data-src="images/blood-1" data-label="Both of us donating · images/blood-1.jpg" style="width:504px;height:896px"></div><div class="tag" style="--tc:var(--blood)">We gave first</div></div>
+  <div class="tracker" data-act="Blood camp" data-step="1" style="left:740px;--tc:var(--blood)"></div>
+  <div class="abs a stamp" style="left:740px;top:150px;--d:.5s;--r:-2deg;border:5px solid var(--blood);color:var(--blood);padding:12px 18px 10px"><span class="lbl" style="font-size:22px">Stop 01 · 01 Oct 2026 · 2 hours</span></div>
+  <h2 class="abs disp" style="left:736px;top:236px;font-size:124px">
+    <span class="ln sd" style="--d:.55s"><span>Blood Donation</span></span>
+    <span class="ln sd" style="--d:.67s"><span style="color:var(--blood)">Camp</span></span>
+  </h2>
+  <p class="abs body a fade" style="left:740px;top:482px;width:1060px;font-size:26px;--d:1s">Run by the <b>MAD Club, BITS Pilani Dubai</b> with <b>Dubai Health</b>, whose blood service relies on voluntary, unpaid donors.</p>
+  <div class="abs lbl a fade" style="left:740px;top:604px;color:var(--ink-2);font-size:20px;--d:1.1s">The donor's path · we walked every step with them</div>
+  <svg class="abs" style="left:740px;top:650px;width:1060px;height:120px" viewBox="0 0 1060 120"><g fill="none" stroke="var(--ink)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path class="draw" pathLength="1" style="--d:1.7s;--t:.35s" d="M140 60h100m-16-14 16 14-16 14"/>
+    <path class="draw" pathLength="1" style="--d:2.2s;--t:.35s" d="M405 60h100m-16-14 16 14-16 14"/>
+    <path class="draw" pathLength="1" style="--d:2.7s;--t:.35s" d="M670 60h100m-16-14 16 14-16 14"/></g></svg>
+  <div class="badge a light" style="--s:120px;left:740px;top:650px;--d:1.3s"><svg viewBox="0 0 64 64"><use href="#i-form"/></svg></div>
+  <div class="badge a light" style="--s:120px;left:1005px;top:650px;--d:2s"><svg viewBox="0 0 64 64"><use href="#i-vitals"/></svg></div>
+  <div class="badge a light" style="--s:120px;left:1270px;top:650px;--d:2.5s;background:var(--blood)"><svg viewBox="0 0 64 64" style="--blood:#F8F1E2;--cream:#C9302C"><use href="#i-drop"/></svg></div>
+  <div class="badge a light" style="--s:120px;left:1535px;top:650px;--d:3s"><svg viewBox="0 0 64 64"><use href="#i-cup"/></svg></div>
+  <div class="abs a rise" style="left:740px;top:800px;width:236px;--d:1.4s"><div class="disp" style="font-size:34px">1 · Forms</div><p class="body" style="font-size:20px;margin-top:6px">helped donors fill in the procedural forms</p></div>
+  <div class="abs a rise" style="left:1005px;top:800px;width:236px;--d:2.1s"><div class="disp" style="font-size:34px">2 · Vitals</div><p class="body" style="font-size:20px;margin-top:6px">guided them to the check-up booths</p></div>
+  <div class="abs a rise" style="left:1270px;top:800px;width:236px;--d:2.6s"><div class="disp" style="font-size:34px;color:var(--blood)">3 · Donate</div><p class="body" style="font-size:20px;margin-top:6px"><b>we gave blood too</b>, both of us</p></div>
+  <div class="abs a rise" style="left:1535px;top:800px;width:236px;--d:3.1s"><div class="disp" style="font-size:34px">4 · Refuel</div><p class="body" style="font-size:20px;margin-top:6px">handed out refreshments afterwards</p></div>
+  <aside class="notes">The blood camp was run by our MAD Club with Dubai Health. We helped donors fill in the procedural forms, guided them to the vitals booths and handed out refreshments afterwards. And we both donated blood ourselves.</aside>
+</section>
+
+<!-- ================= 04 BLOOD · 02 IMPACT ================= -->
+<section class="slide" data-speaker="Vedansh" data-title="Blood camp · 02 Impact">
+  <div class="frame a fall" style="left:1272px;top:44px;--d:.25s;--r:1.5deg"><div class="ph" data-src="images/blood-2" data-label="Donors at the camp · images/blood-2.jpg" style="width:504px;height:896px"></div><div class="tag" style="--tc:var(--blood)">01 Oct · Dubai Health</div></div>
+  <div class="tracker" data-act="Blood camp" data-step="2" style="left:120px;--tc:var(--blood)"></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">How did it impact the community?</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:118px">
+    <span class="ln" style="--d:.15s"><span>1 donation.</span></span>
+    <span class="ln" style="--d:.27s"><span>Up to <span style="color:var(--blood)">3 patients.</span></span></span>
+  </h2>
+  <svg class="abs" style="left:120px;top:440px;width:1060px;height:280px" viewBox="0 0 1060 280">
+    <g fill="none" stroke="var(--ink)" stroke-width="6" stroke-linecap="round">
+      <path class="draw" pathLength="1" style="--d:1s;--t:.6s" d="M200 140C330 140 330 40 450 40"/>
+      <path class="draw" pathLength="1" style="--d:1.1s;--t:.6s" d="M200 140H450"/>
+      <path class="draw" pathLength="1" style="--d:1.2s;--t:.6s" d="M200 140C330 140 330 240 450 240"/></g>
+    <g class="a pop" style="--d:.6s;transform-origin:95px 140px"><svg x="5" y="50" width="180" height="180" viewBox="0 0 64 64" style="fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round"><use href="#i-drop"/></svg></g>
+    <g class="a pop" style="--d:1.5s;transform-origin:600px 40px"><rect x="452" y="8" width="296" height="64" rx="32" fill="var(--blood)" stroke="var(--ink)" stroke-width="5"/><text x="600" y="51" text-anchor="middle" style="font:800 24px var(--body);letter-spacing:.12em;fill:var(--cream)">RED CELLS</text></g>
+    <g class="a pop" style="--d:1.7s;transform-origin:600px 140px"><rect x="452" y="108" width="296" height="64" rx="32" fill="var(--gold)" stroke="var(--ink)" stroke-width="5"/><text x="600" y="151" text-anchor="middle" style="font:800 24px var(--body);letter-spacing:.12em;fill:var(--ink)">PLASMA</text></g>
+    <g class="a pop" style="--d:1.9s;transform-origin:600px 240px"><rect x="452" y="208" width="296" height="64" rx="32" fill="var(--pink)" stroke="var(--ink)" stroke-width="5"/><text x="600" y="251" text-anchor="middle" style="font:800 24px var(--body);letter-spacing:.12em;fill:var(--ink)">PLATELETS</text></g>
+    <g class="a fade" style="--d:2.1s;font:500 23px var(--body);fill:var(--ink-2)"><text x="776" y="48">surgery &amp; trauma</text><text x="776" y="148">burns &amp; clotting</text><text x="776" y="248">cancer care</text></g>
+  </svg>
+  <div class="abs a rise" style="left:120px;top:760px;width:500px;--d:2.4s"><div class="disp" style="font-size:96px;color:var(--blood)">85%+</div><p class="body" style="font-size:21px;margin-top:6px">of the world's blood comes from voluntary, unpaid donors, the safest supply there is.</p><div class="cite" style="margin-top:6px"><b>WHO</b>, global blood safety data (2023)</div></div>
+  <div class="abs a rise" style="left:680px;top:760px;width:500px;--d:2.65s"><div class="disp" style="font-size:96px">2 units</div><p class="body" style="font-size:21px;margin-top:6px">given by us, plus every donor we steadied on the way to the chair.</p></div>
+  <aside class="notes">One donation is split into red cells, plasma and platelets, so it can help up to three patients. And voluntary, unpaid donors like the ones we guided give over eighty-five percent of the world's blood.</aside>
+</section>
+
+<!-- ================= 05 BLOOD · 03 LEARNED ================= -->
+<section class="slide" data-speaker="Vedansh" data-title="Blood camp · 03 What we learned">
+  <div class="frame a wipe" style="left:110px;top:44px;--d:.2s"><div class="ph" data-src="images/blood-3" data-label="Forms desk / guiding donors · images/blood-3.jpg" style="width:504px;height:896px"></div><div class="tag">Then we helped</div></div>
+  <div class="tracker" data-act="Blood camp" data-step="3" style="left:740px;--tc:var(--blood)"></div>
+  <div class="abs lbl a fade" style="left:740px;top:150px;color:var(--ink-2);--d:.1s">How did it impact us?</div>
+  <h2 class="abs disp" style="left:736px;top:196px;font-size:104px">
+    <span class="ln dn" style="--d:.2s"><span>Empathy comes</span></span>
+    <span class="ln dn" style="--d:.32s"><span>from <span style="color:var(--blood)">going first.</span></span></span>
+  </h2>
+  <div class="lcard a flip" style="left:740px;top:420px;--pc:var(--gold);--d:.7s"><div class="badge rel" style="--s:96px;--sh:5px"><svg viewBox="0 0 64 64"><use href="#i-spark"/></svg></div><div><div class="lbl">Most surprising</div><p>Half of donating is <b>reassurance</b>. Having just donated, we could calm first-timers honestly.</p></div></div>
+  <div class="lcard a flip" style="left:740px;top:600px;--pc:var(--ink);--d:1s"><div class="badge rel" style="--s:96px;--sh:5px"><svg viewBox="0 0 64 64"><use href="#i-mountain"/></svg></div><div><div class="lbl">Most challenging</div><p>Steadying <b>our own nerves</b> before the needle, then walking straight back to the forms desk.</p></div></div>
+  <div class="lcard a flip" style="left:740px;top:780px;--pc:var(--blood);--d:1.3s"><div class="badge rel" style="--s:96px;--sh:5px"><svg viewBox="0 0 64 64"><use href="#i-sprout"/></svg></div><div><div class="lbl">Most rewarding · our difference</div><p><b>Two donations</b> of our own, and every donor we walked from form to refreshments.</p></div></div>
+  <aside class="notes">What surprised us was that half of donating is reassurance. Having just donated, we could calm first-timers honestly. The challenge was steadying our own nerves first. The reward: two donations of our own, and every donor we walked through.</aside>
+</section>
+
+<!-- ================= 06 BLOOD · 04 RESEARCH ================= -->
+<section class="slide" data-speaker="Vedansh" data-title="Blood camp · 04 Research">
+  <div class="frame a deal" style="left:1272px;top:44px;--d:.15s;--fx:-260px;--fr:12deg"><div class="ph" data-src="images/blood-4" data-label="Both of us after donating · images/blood-4.jpg" style="width:504px;height:896px"></div><div class="tag" style="--tc:var(--blood)">2 donations</div></div>
+  <div class="tracker" data-act="Blood camp" data-step="4" style="left:120px;--tc:var(--blood)"></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">Linked to sustainable-happiness research</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:112px;line-height:.95"><span class="wd" style="--d:.2s">Kindness</span> <span class="wd" style="--d:.3s">pays</span><br><span class="wd" style="--d:.4s">the</span> <span class="wd" style="--d:.5s;color:var(--blood)">giver</span> <span class="wd" style="--d:.6s;color:var(--blood)">back.</span></h2>
+  <div class="abs" style="left:120px;top:436px;display:flex;gap:12px;align-items:center">
+    <span class="lbl a fade" style="font-size:17px;color:var(--ink-2);--d:.8s">Strategies</span>
+    <span class="chip pb a stamp" style="--c:var(--blood);color:var(--cream);--d:.9s;--r:-2deg"><svg viewBox="0 0 64 64"><use href="#i-kind"/></svg>Acts of kindness</span>
+    <span class="chip pb a stamp" style="--c:var(--ink);color:var(--cream);--d:1.05s;--r:1.5deg"><svg viewBox="0 0 64 64"><use href="#i-breath"/></svg>Managing stress</span>
+    <span class="chip pb a stamp" style="--c:var(--gold);--d:1.2s;--r:-1deg"><svg viewBox="0 0 64 64"><use href="#i-thanks"/></svg>Gratitude</span>
+  </div>
+  <div class="scard a deal" style="left:120px;top:540px;--pc:var(--blood);--fx:300px;--fr:-10deg;--d:1.4s"><div class="hd">Ferguson et al. (2012) · Transfusion</div><p>Blood donors are driven by a <b>“warm glow”</b>, the good feeling of giving itself, more than by pure altruism.</p></div>
+  <div class="scard a deal" style="left:665px;top:540px;--pc:var(--ink);--fx:-100px;--fr:8deg;--d:1.6s"><div class="hd">Thoits &amp; Hewitt (2001) · J. Health &amp; Soc. Behavior</div><p>Volunteering improved <b>all six well-being measures</b> in 2,681 adults, and happier people went on to volunteer more.</p></div>
+  <p class="abs body a fade" style="left:120px;top:850px;width:1060px;font-size:23px;--d:2.2s"><b style="color:var(--blood)">Our link:</b> giving first turned our nerves into calm, and that calm carried into every donor after. Kindness and stress management in one morning.</p>
+  <aside class="notes">This is acts of kindness, gratitude and managing stress. Ferguson found donors are driven by a warm glow, the good feeling of giving itself. And Thoits and Hewitt showed volunteering improves well-being, and happier people volunteer more.</aside>
+</section>
+
+<!-- ================= 07 LANGAR · 01 DID ================= -->
+<section class="slide" data-speaker="Vedansh" data-title="Langar seva · 01 What we did">
+  <div class="blk a iris" style="left:690px;top:-20px;width:1270px;height:1120px;background:var(--saffron);--ix:25%;--iy:67%"></div>
+  <div class="frame a zoom" style="left:110px;top:44px;--d:.5s"><div class="ph" data-src="images/langar-1" data-label="Organising dal, roti, chawal · images/langar-1.jpg" style="width:504px;height:896px"></div><div class="tag" style="--tc:var(--saffron);color:var(--ink)">Behind the counter</div></div>
+  <div class="tracker" data-act="Langar seva" data-step="1" style="left:740px;--tc:var(--ink)"></div>
+  <div class="abs a stamp" style="left:740px;top:150px;--d:.7s;--r:2deg;border:5px solid var(--ink);padding:12px 18px 10px"><span class="lbl" style="font-size:22px">Stop 02 · 14 Nov 2026 · 1 hour</span></div>
+  <h2 class="abs disp" style="left:736px;top:230px;font-size:140px"><span class="ln" style="--d:.8s"><span>Langar <span style="color:var(--cream)">Seva</span></span></span></h2>
+  <p class="abs body a fade" style="left:740px;top:378px;width:1060px;font-size:25px;--d:1s">At <b>Guru Nanak Darbar Gurudwara, Jebel Ali</b>. <b>Langar</b> is the free community kitchen; <b>seva</b> means selfless service.</p>
+  <svg class="abs" style="left:740px;top:480px;width:1060px;height:500px" viewBox="0 0 1060 500"><path class="draw" pathLength="1" style="--d:1s;--t:1.4s" d="M270 80A170 170 0 1 1 269.9 80" fill="none" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/></svg>
+  <div class="badge a pop" style="--s:100px;left:960px;top:510px;--d:1.2s"><svg viewBox="0 0 64 64"><use href="#i-pot"/></svg></div>
+  <div class="badge a pop" style="--s:100px;left:1130px;top:680px;--d:1.7s"><svg viewBox="0 0 64 64"><use href="#i-ladle"/></svg></div>
+  <div class="badge a pop" style="--s:100px;left:960px;top:850px;--d:2.2s"><svg viewBox="0 0 64 64"><use href="#i-pangat"/></svg></div>
+  <div class="badge a pop" style="--s:100px;left:790px;top:680px;--d:2.7s"><svg viewBox="0 0 64 64"><use href="#i-heart"/></svg></div>
+  <div class="abs a pop" style="left:960px;top:680px;--d:3.1s;width:100px"><svg viewBox="0 0 64 64" width="100" height="100" style="fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round;overflow:visible"><use href="#i-bowl" style="--saffron:var(--cream)"/></svg></div>
+  <div class="abs a fade" style="left:1290px;top:520px;width:510px;--d:1.3s"><div class="disp" style="font-size:38px">1 · We organised</div><div class="body" style="font-size:22px">dal, roti, chawal &amp; meethe chawal</div></div>
+  <div class="abs a fade" style="left:1290px;top:625px;width:510px;--d:1.8s"><div class="disp" style="font-size:38px">2 · Served</div><div class="body" style="font-size:22px">everyone who came, of every faith</div></div>
+  <div class="abs a fade" style="left:1290px;top:730px;width:510px;--d:2.3s"><div class="disp" style="font-size:38px">3 · Sat in pangat</div><div class="body" style="font-size:22px">side by side on the floor, same level</div></div>
+  <div class="abs a fade" style="left:1290px;top:835px;width:510px;--d:2.8s"><div class="disp" style="font-size:38px">4 · Were served</div><div class="body" style="font-size:22px">and ate langar ourselves</div></div>
+  <aside class="notes">On the fourteenth of November we did one hour of seva at Guru Nanak Darbar in Jebel Ali. We organised the dal, roti, chawal and meethe chawal, served everyone, then sat in pangat and were served ourselves.</aside>
+</section>
+
+<!-- ================= 08 LANGAR · 02 IMPACT ================= -->
+<section class="slide" data-speaker="Vedansh" data-title="Langar seva · 02 Impact">
+  <div class="frame a from-t" style="left:1272px;top:44px;--d:.2s"><div class="ph" data-src="images/langar-2" data-label="Serving in the langar hall · images/langar-2.jpg" style="width:504px;height:896px"></div><div class="tag" style="--tc:var(--saffron);color:var(--ink)">Serving everyone</div></div>
+  <div class="tracker" data-act="Langar seva" data-step="2" style="left:120px;--tc:var(--saffron);--tt:var(--ink)"></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">How did it impact the community?</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:112px">
+    <span class="ln" style="--d:.15s"><span>A free meal,</span></span>
+    <span class="ln" style="--d:.27s"><span style="color:var(--saffron)">with dignity.</span></span>
+  </h2>
+  <p class="abs body a fade" style="left:120px;top:412px;width:1060px;font-size:23px;--d:.5s">Guru Nanak Darbar, the UAE's first official gurudwara (2012), feeds anyone who walks in, free.</p>
+  <svg class="abs" style="left:120px;top:470px;width:1060px;height:230px" viewBox="0 0 1060 230">
+    <text class="a fade" style="--d:.7s;font:800 19px var(--body);letter-spacing:.16em;fill:var(--ink-2)" x="0" y="40">PEHLE PANGAT, PHIR SANGAT · FIRST EAT TOGETHER AS EQUALS</text>
+    <path d="M0 215H1060" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/>
+    <g style="fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round">
+      <svg class="a pop" style="--d:.9s" x="0" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+      <svg class="a pop" style="--d:1.05s" x="150" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+      <svg class="a pop" style="--d:1.2s" x="300" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+      <svg class="a pop" style="--d:1.35s" x="450" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+      <svg class="a pop" style="--d:1.5s" x="600" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+      <svg class="a pop" style="--d:1.65s" x="750" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+      <svg class="a pop" style="--d:1.8s" x="900" y="80" width="135" height="135" viewBox="0 0 64 64"><use href="#i-pangat"/></svg>
+    </g>
+  </svg>
+  <div class="abs" style="left:120px;top:730px;width:1060px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+    <div class="pb a rise" style="--c:var(--ink);color:var(--cream);padding:18px 22px;--d:2s"><div class="disp" style="font-size:46px">Free</div><div class="body" style="font-size:19px;margin-top:4px">for anyone who walks in</div></div>
+    <div class="pb a rise" style="--c:var(--saffron);padding:18px 22px;--d:2.15s"><div class="disp" style="font-size:46px">Every faith</div><div class="body" style="font-size:19px;margin-top:4px">same row, same food</div></div>
+    <div class="pb a rise" style="--c:var(--ink);color:var(--cream);padding:18px 22px;--d:2.3s"><div class="disp" style="font-size:46px">101</div><div class="body" style="font-size:19px;margin-top:4px">nationalities at one Guinness-record breakfast (2017)</div></div>
+  </div>
+  <p class="abs body a fade" style="left:120px;top:892px;width:1060px;font-size:21px;--d:2.6s"><b>Research says:</b> people who eat with others report higher happiness and life satisfaction. <span class="cite"><b>Dunbar (2017)</b>, Adaptive Human Behavior &amp; Physiology</span></p>
+  <aside class="notes">Langar is a free meal for anyone, of any faith, served on the same floor at the same level. This gurudwara once fed a hundred and one nationalities in a single Guinness-record breakfast.</aside>
+</section>
+
+<!-- ================= 09 LANGAR · 03 LEARNED ================= -->
+<section class="slide" data-speaker="Vedansh" data-title="Langar seva · 03 What we learned">
+  <div class="frame a behind" style="left:110px;top:44px;--d:.2s"><div class="ph" data-src="images/langar-3" data-label="Sitting in pangat · images/langar-3.jpg" style="width:504px;height:896px"></div><div class="tag" style="--tc:var(--saffron);color:var(--ink)">Then we were served</div></div>
+  <div class="tracker" data-act="Langar seva" data-step="3" style="left:740px;--tc:var(--saffron);--tt:var(--ink)"></div>
+  <div class="abs lbl a fade" style="left:740px;top:150px;color:var(--ink-2);--d:.1s">How did it impact us?</div>
+  <h2 class="abs disp" style="left:736px;top:196px;font-size:112px">
+    <span class="ln" style="--d:.2s"><span>Giver became</span></span>
+    <span class="ln" style="--d:.32s"><span style="color:var(--saffron)">receiver.</span></span>
+  </h2>
+  <div class="pb a corner lq" style="left:740px;top:440px;--c:var(--saffron);--fx:-420px;--fy:-260px;--d:.6s"><div class="badge rel" style="--s:84px;--sh:4px"><svg viewBox="0 0 64 64"><use href="#i-spark"/></svg></div><div><div class="lbl">Most surprising</div><p>Being served langar minutes after serving it. We swapped seats.</p></div></div>
+  <div class="pb a corner lq" style="left:1280px;top:440px;--c:var(--ink);color:var(--cream);--fx:420px;--fy:-260px;--d:.8s"><div class="badge rel" style="--s:84px;--sh:4px;border-color:var(--cream);box-shadow:4px 4px 0 #000"><svg viewBox="0 0 64 64"><use href="#i-mountain"/></svg></div><div><div class="lbl">Most challenging</div><p>Learning the kitchen's rhythm on the spot, in just one hour.</p></div></div>
+  <div class="pb a corner lq" style="left:740px;top:710px;--c:var(--green);color:var(--cream);--fx:-420px;--fy:260px;--d:1s"><div class="badge rel" style="--s:84px;--sh:4px"><svg viewBox="0 0 64 64"><use href="#i-heart"/></svg></div><div><div class="lbl">Most rewarding</div><p>Sitting in the same row as the people we'd served, eating the same food.</p></div></div>
+  <div class="pb a corner lq" style="left:1280px;top:710px;--c:var(--cream);--fx:420px;--fy:260px;--d:1.2s;outline:5px solid var(--ink);outline-offset:-5px"><div class="badge rel" style="--s:84px;--sh:4px"><svg viewBox="0 0 64 64"><use href="#i-people"/></svg></div><div><div class="lbl">About us</div><p>Nobody asked who we were. We were simply <b>trusted</b>, and wanted to live up to it.</p></div></div>
+  <aside class="notes">The surprise was being served minutes after serving; giver and receiver swapped seats. The challenge was learning the kitchen's rhythm on the spot. The reward was sitting in the same row as the people we'd served. Nobody asked who we were; we were simply trusted.</aside>
+</section>
+
+<!-- ================= 10 LANGAR · 04 RESEARCH ================= -->
+<section class="slide" data-speaker="Vedansh" data-title="Langar seva · 04 Research">
+  <div class="frame a tile" style="left:1272px;top:44px;--d:.2s;--ty:-90deg"><div class="ph" data-src="images/langar-4" data-label="At the gurudwara · images/langar-4.jpg" style="width:504px;height:896px"></div><div class="tag" style="--tc:var(--saffron);color:var(--ink)">14 Nov · Jebel Ali</div></div>
+  <div class="tracker" data-act="Langar seva" data-step="4" style="left:120px;--tc:var(--saffron);--tt:var(--ink)"></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">Linked to sustainable-happiness research</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:104px">
+    <span class="a track" style="display:block;--d:.15s">Belonging is</span>
+    <span class="a track" style="display:block;color:var(--saffron);--d:.35s">the strategy.</span>
+  </h2>
+  <svg class="abs" style="left:500px;top:400px;width:150px;height:520px" viewBox="0 0 150 520"><g fill="none" stroke-width="7" stroke-linecap="round">
+    <path class="draw" pathLength="1" style="stroke:var(--saffron);--d:1.3s;--t:.7s" d="M0 80C80 80 70 250 150 250"/>
+    <path class="draw" pathLength="1" style="stroke:var(--ink);--d:1.6s;--t:.7s" d="M0 250C80 250 70 80 150 80"/>
+    <path class="draw" pathLength="1" style="stroke:var(--green);--d:1.9s;--t:.7s" d="M0 420H150"/></g></svg>
+  <div class="pb a from-l pill" style="top:420px;--c:var(--saffron);--d:.6s"><div class="badge rel" style="--s:70px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-people"/></svg></div><span class="disp">Social<br>relationships</span></div>
+  <div class="pb a from-l pill" style="top:590px;--c:var(--ink);color:var(--cream);--d:.8s"><div class="badge rel" style="--s:70px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-thanks"/></svg></div><span class="disp">Expressing<br>gratitude</span></div>
+  <div class="pb a from-l pill" style="top:760px;--c:var(--green);color:var(--cream);--d:1s"><div class="badge rel" style="--s:70px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-kind"/></svg></div><span class="disp">Acts of<br>kindness</span></div>
+  <div class="rcard a fade" style="top:405px;--pc:var(--ink);--d:2.1s"><div class="cite"><b>Emmons &amp; McCullough (2003)</b> · JPSP</div><p>Counting blessings each week left people <b>more satisfied with life</b>. Seva is gratitude in practice.</p></div>
+  <div class="rcard a fade" style="top:575px;--pc:var(--saffron);--d:1.8s"><div class="cite"><b>Diener &amp; Seligman (2002)</b> · Psychological Science</div><p>The happiest 10% all shared one thing: <b>strong social relationships</b>. Langar is built on them.</p></div>
+  <div class="rcard a fade" style="top:745px;--pc:var(--green);--d:2.4s"><div class="cite"><b>Dunn, Aknin &amp; Norton (2008)</b> · Science</div><p>Spending on <b>others</b> made people happier than spending on themselves. We gave food and time.</p></div>
+  <aside class="notes">That's nurturing social relationships: Diener and Seligman found the happiest people all have strong ones. Seva is gratitude in practice, and Emmons and McCullough found counting blessings lifts well-being. And Dunn showed spending on others makes us happier. Over to Tohraan.</aside>
+</section>
+
+<!-- ================= 11 RUN · 01 DID ================= -->
+<section class="slide" data-speaker="Tohraan" data-title="Unity Run · 01 What we did">
+  <div class="blk a wipe-d" style="left:-20px;top:-20px;width:1960px;height:460px;background:var(--green)"></div>
+  <div class="frame a from-r" style="left:110px;top:44px;--d:.6s"><div class="ph" data-src="images/run-1" data-label="In volunteer jackets before dawn · images/run-1.jpg" style="width:504px;height:896px"></div><div class="tag" style="--tc:var(--green)">Jackets on · pre-dawn</div></div>
+  <div class="tracker" data-act="Unity Run" data-step="1" style="left:740px;--tc:var(--gold);--tt:var(--ink)"></div>
+  <div class="abs a stamp" style="left:740px;top:140px;--r:-2deg;border:5px solid var(--cream);color:var(--cream);padding:12px 18px 10px;--d:.7s"><span class="lbl" style="font-size:22px">Stop 03 · 15 Nov 2026 · 8 hours · pre-dawn start</span></div>
+  <h2 class="abs disp" style="left:736px;top:222px;font-size:100px;color:var(--cream)">
+    <span class="ln dn" style="--d:.5s"><span>Emirates NBD</span></span>
+    <span class="ln dn" style="--d:.62s"><span>Unity Run 2026</span></span>
+  </h2>
+  <p class="abs body a fade" style="left:740px;top:462px;width:1060px;font-size:21px;line-height:1.4;--d:1s"><b>FittGROUP</b> · Hamdan bin Mohammed Community Sports Initiative · Dubai Design District · 3, 5 &amp; 10 km · open to <b>People of Determination</b> · <b style="color:var(--green)">“Walk, Run for Unity in Diversity”</b></p>
+  <svg class="abs" style="left:740px;top:560px;width:1060px;height:200px" viewBox="0 0 1060 200">
+    <path d="M20 150C150 150 180 60 280 60S440 150 560 130 720 40 820 60 980 150 1040 110" fill="none" stroke="rgba(28,24,20,.12)" stroke-width="40" stroke-linecap="round"/>
+    <path id="route" class="draw" pathLength="1" style="--d:.8s;--t:1.6s;animation-timing-function:linear" d="M20 150C150 150 180 60 280 60S440 150 560 130 720 40 820 60 980 150 1040 110" fill="none" stroke="var(--ink)" stroke-width="7" stroke-linecap="round"/>
+  </svg>
+  <div class="abs runner" style="left:740px;top:560px;width:30px;height:30px;border-radius:50%;background:var(--blood);border:5px solid var(--ink);offset-path:path('M20 150C150 150 180 60 280 60S440 150 560 130 720 40 820 60 980 150 1040 110');offset-rotate:0deg;offset-anchor:50% 50%;offset-distance:0%;opacity:0"></div>
+  <style>
+    .slide.active .runner{animation:travel calc(1.6s*var(--kt)) linear calc(var(--b,.2s) + .8s*var(--k)) forwards}
+    @keyframes travel{0%{opacity:1;offset-distance:0%}97%{opacity:1}100%{opacity:0;offset-distance:100%}}
+    body.static .runner,.slide.seen .runner{display:none}
+  </style>
+  <div class="badge a pop station" data-at=".14" style="--s:100px"><svg viewBox="0 0 64 64"><use href="#i-sign"/></svg></div>
+  <div class="badge a pop station" data-at=".4" style="--s:100px"><svg viewBox="0 0 64 64"><use href="#i-flag"/></svg></div>
+  <div class="badge a pop station" data-at=".66" style="--s:100px"><svg viewBox="0 0 64 64"><use href="#i-water"/></svg></div>
+  <div class="badge a pop station" data-at=".92" style="--s:100px"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div>
+  <div class="abs a rise" style="left:740px;top:800px;width:240px;--d:1.2s"><div class="disp" style="font-size:34px">1 · Guide</div><p class="body" style="font-size:20px;margin-top:4px">showed runners the start line and where everything was</p></div>
+  <div class="abs a rise" style="left:1005px;top:800px;width:240px;--d:1.6s"><div class="disp" style="font-size:34px">2 · Flags</div><p class="body" style="font-size:20px;margin-top:4px">~40 UAE flags each, about <b>80</b> handed out</p></div>
+  <div class="abs a rise" style="left:1270px;top:800px;width:240px;--d:2s"><div class="disp" style="font-size:34px">3 · Water</div><p class="body" style="font-size:20px;margin-top:4px">water for every runner at the finish</p></div>
+  <div class="abs a rise" style="left:1535px;top:800px;width:250px;--d:2.4s"><div class="disp" style="font-size:34px">4 · Medals</div><p class="body" style="font-size:20px;margin-top:4px">a medal around every finisher's neck</p></div>
+  <aside class="notes">Thanks, Vedansh. The next day we spent eight hours at the Emirates NBD Unity Run, organised by FittGROUP at d3. We started before dawn in volunteer jackets, guided runners to the start, handed out about eighty UAE flags, gave out water and put a medal on every finisher.</aside>
+</section>
+
+<!-- ================= 12 RUN · 02 IMPACT ================= -->
+<section class="slide" data-speaker="Tohraan" data-title="Unity Run · 02 Impact">
+  <div class="frame a wipe-d" style="left:1272px;top:44px;--d:.2s"><div class="ph" data-src="images/run-2" data-label="Runners at the finish line · images/run-2.jpg" style="width:504px;height:896px"></div><div class="tag" style="--tc:var(--green)">Every ability</div></div>
+  <div class="tracker" data-act="Unity Run" data-step="2" style="left:120px;--tc:var(--green)"></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">How did it impact the community?</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:112px">
+    <span class="ln sd" style="--d:.15s"><span>Every ability,</span></span>
+    <span class="ln sd" style="--d:.27s"><span style="color:var(--green)">one finish line.</span></span>
+  </h2>
+  <svg class="abs" style="left:120px;top:430px;width:1060px;height:230px" viewBox="0 0 1060 230">
+    <g class="a fade" style="--d:.6s"><rect x="880" y="10" width="14" height="210" fill="var(--ink)"/><rect x="1036" y="10" width="14" height="210" fill="var(--ink)"/>
+      <rect x="880" y="10" width="170" height="52" fill="var(--cream)" stroke="var(--ink)" stroke-width="5"/>
+      <g fill="var(--ink)"><rect x="882" y="12" width="21" height="24"/><rect x="924" y="12" width="21" height="24"/><rect x="966" y="12" width="21" height="24"/><rect x="1008" y="12" width="21" height="24"/><rect x="903" y="36" width="21" height="24"/><rect x="945" y="36" width="21" height="24"/><rect x="987" y="36" width="21" height="24"/><rect x="1029" y="36" width="19" height="24"/></g>
+      <text x="965" y="98" text-anchor="middle" style="font:800 20px var(--body);letter-spacing:.2em;fill:var(--ink)">FINISH</text></g>
+    <path d="M0 220H1060" stroke="var(--ink)" stroke-width="6" stroke-linecap="round"/>
+    <g style="fill:none;stroke:var(--ink);stroke-width:4;stroke-linecap:round;stroke-linejoin:round">
+      <g class="a from-l" style="--d:.9s;--t:1.4s"><svg x="440" y="70" width="140" height="150" viewBox="0 0 64 64"><use href="#i-walk"/></svg></g>
+      <g class="a from-l" style="--d:1.1s;--t:1.4s"><svg x="590" y="70" width="140" height="150" viewBox="0 0 64 64"><use href="#i-wheel"/></svg></g>
+      <g class="a from-l" style="--d:1.3s;--t:1.4s"><svg x="740" y="70" width="140" height="150" viewBox="0 0 64 64"><use href="#i-run"/></svg></g>
+    </g>
+  </svg>
+  <div class="abs" style="left:120px;top:690px;width:1060px;display:grid;grid-template-columns:repeat(3,1fr);gap:30px">
+    <div class="a rise" style="--d:1.6s"><div class="disp" style="font-size:88px;color:var(--green)">~<span data-count="80" style="--d:1.6s">80</span></div><p class="body" style="font-size:20px">UAE flags put into runners' hands</p></div>
+    <div class="a rise" style="--d:1.8s"><div class="disp" style="font-size:88px">3·5·10</div><p class="body" style="font-size:20px">km routes for every age and ability</p></div>
+    <div class="a rise" style="--d:2s"><div class="disp" style="font-size:88px">Free</div><p class="body" style="font-size:20px">entry for People of Determination, with a companion</p></div>
+  </div>
+  <p class="abs body a fade" style="left:120px;top:888px;width:1060px;font-size:21px;--d:2.4s"><b>Research says:</b> across 515 studies in 38 countries, contact between groups reliably reduces prejudice. An inclusive run is exactly that contact. <span class="cite"><b>Pettigrew &amp; Tropp (2006)</b></span></p>
+  <aside class="notes">The run is built around inclusion: People of Determination run alongside every age group. Pettigrew and Tropp's review of 515 studies shows contact between groups reduces prejudice, and a shared finish line is exactly that contact.</aside>
+</section>
+
+<!-- ================= 13 RUN · 03 LEARNED ================= -->
+<section class="slide" data-speaker="Tohraan" data-title="Unity Run · 03 What we learned">
+  <div class="frame a from-l" style="left:110px;top:44px;--d:.2s"><div class="ph" data-src="images/run-3" data-label="Handing out flags or water · images/run-3.jpg" style="width:504px;height:896px"></div><div class="tag" style="--tc:var(--green)">~80 flags</div></div>
+  <div class="tracker" data-act="Unity Run" data-step="3" style="left:740px;--tc:var(--green)"></div>
+  <div class="abs lbl a fade" style="left:740px;top:150px;color:var(--ink-2);--d:.1s">How did it impact us?</div>
+  <h2 class="abs disp" style="left:736px;top:196px;font-size:104px">
+    <span class="ln dn" style="--d:.2s"><span>Logistics is kindness</span></span>
+    <span class="ln dn" style="--d:.32s"><span style="color:var(--green)">no one sees.</span></span>
+  </h2>
+  <div class="col a from-t" style="left:740px;--pc:var(--gold);--tt:var(--ink);--d:.6s"><div class="hd"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-spark"/></svg></div><span class="lbl">Surprising</span></div><p>A race starts <b>hours before the gun</b>, with volunteers setting up in the dark.</p></div>
+  <div class="col a from-b" style="left:1105px;--pc:var(--ink);--d:.8s"><div class="hd"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-mountain"/></svg></div><span class="lbl">Challenging</span></div><p>A pre-dawn start the morning after seva, then <b>eight hours on our feet</b>, with the same energy for the last runner as the first.</p></div>
+  <div class="col a from-t" style="left:1470px;--pc:var(--green);--d:1s"><div class="hd"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div><span class="lbl">Rewarding</span></div><p>Hanging medals on finishers, especially <b>People of Determination</b> crossing the line to cheers.</p></div>
+  <aside class="notes">What surprised us: a race starts hours before the gun, with volunteers in the dark. Logistics is kindness no one sees. The challenge was eight hours on our feet the morning after seva. The reward was hanging medals on People of Determination crossing the line.</aside>
+</section>
+
+<!-- ================= 14 RUN · 04 RESEARCH ================= -->
+<section class="slide" data-speaker="Tohraan" data-title="Unity Run · 04 Research">
+  <div class="frame a hang" style="left:1272px;top:44px;--d:.2s"><div class="ph" data-src="images/run-4" data-label="Medals at the finish · images/run-4.jpg" style="width:504px;height:896px"></div><div class="tag" style="--tc:var(--green)">Every finisher</div></div>
+  <div class="tracker" data-act="Unity Run" data-step="4" style="left:120px;--tc:var(--green)"></div>
+  <div class="abs lbl a fade" style="left:120px;top:150px;color:var(--ink-2);--d:.1s">Linked to sustainable-happiness research</div>
+  <h2 class="abs disp" style="left:116px;top:196px;font-size:112px">
+    <span class="ln" style="--d:.15s"><span>Fully present,</span></span>
+    <span class="ln" style="--d:.27s"><span style="color:var(--green)">eight hours straight.</span></span>
+  </h2>
+  <div class="abs" style="left:120px;top:432px;display:flex;gap:12px;align-items:center">
+    <span class="lbl a fade" style="font-size:17px;color:var(--ink-2);--d:.5s">Strategies</span>
+    <span class="chip pb a rise" style="--c:var(--gold);--d:.6s"><svg viewBox="0 0 64 64"><use href="#i-sun"/></svg>Living in the present</span>
+    <span class="chip pb a rise" style="--c:var(--green);color:var(--cream);--d:.75s"><svg viewBox="0 0 64 64"><use href="#i-lotus"/></svg>Body &amp; soul</span>
+    <span class="chip pb a rise" style="--c:var(--ink);color:var(--cream);--d:.9s"><svg viewBox="0 0 64 64"><use href="#i-kind"/></svg>Acts of kindness</span>
+  </div>
+  <div class="rblock a fade" style="top:540px;--d:1.1s"><div class="cite"><b>Killingsworth &amp; Gilbert (2010)</b> · Science</div><p>Our minds wander <b>~47%</b> of the time, and <span class="mark" style="--d:1.6s">we're less happy when they do</span>. Handing water to runner after runner left no room to wander.</p></div>
+  <div class="rblock a fade" style="top:735px;--d:1.9s"><div class="cite"><b>Lyubomirsky, Sheldon &amp; Schkade (2005)</b> · Rev. General Psychology</div><p>Five kind acts <span class="mark" style="--d:2.4s;--mc:#9FD3AE">in a single day</span> lifted happiness; spread across a week, they didn't. Our back-to-back weekend was exactly that burst.</p></div>
+  <aside class="notes">This is living in the present and caring for body and soul. Killingsworth and Gilbert found our minds wander almost half the time, and we're less happy when they do; handing out water left no room for that. And Lyubomirsky found five kind acts in one day beat spreading them out, like our back-to-back weekend.</aside>
+</section>
+
+<!-- ================= 15 CONTRADICTIONS ================= -->
+<section class="slide" data-speaker="Tohraan" data-title="Where class and reality disagreed">
+  <div class="abs lbl a fade" style="left:120px;top:84px;color:var(--ink-2)">Contradictions · re-examined positions</div>
+  <h2 class="abs disp" style="left:116px;top:126px;font-size:96px"><span class="a track" style="display:block;--d:.05s">Class vs. <span style="color:var(--blood)">reality</span></span></h2>
+  <div class="abs a stamp" style="right:120px;top:120px;--r:6deg;--d:3.2s;border:6px solid var(--blood);color:var(--blood);padding:14px 20px 12px"><span class="lbl" style="font-size:28px">Position re-examined</span></div>
+  <div class="abs" style="left:120px;top:270px;width:1680px;display:grid;grid-template-columns:600px 1fr;row-gap:32px;column-gap:0">
+    <div class="a fade row-c" style="--d:.4s"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-book"/></svg></div><div><span class="lbl">In class</span><p>Helping only lifts well-being when it's <b>freely chosen</b>, not done for a reward.</p><div class="cite">Weinstein &amp; Ryan (2010)</div></div></div>
+    <div class="a behind row-f" style="--d:.8s"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-lens"/></svg></div><div><span class="lbl">We found</span><p>We started <b>for a grade</b>, yet it felt real. Somewhere between the forms and the medals, our motivation became our own.</p></div></div>
+    <div class="a fade row-c" style="--d:1.3s"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-book"/></svg></div><div><span class="lbl">In class</span><p>About <b>40% of happiness</b> is under our intentional control, the "happiness pie".</p><div class="cite">Lyubomirsky et al. (2005)</div></div></div>
+    <div class="a behind row-f" style="--d:1.7s"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-lens"/></svg></div><div><span class="lbl">We found</span><p>We could only help because we were <b>healthy enough to donate</b>, free that weekend, and in a city that makes volunteering easy. Circumstances matter more than the pie suggests.</p><div class="cite">cf. Brown &amp; Rohrer (2020), J. Happiness Studies</div></div></div>
+    <div class="a fade row-c" style="--d:2.2s"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-book"/></svg></div><div><span class="lbl">In class</span><p>An act of kindness means a <b>giver</b> helps a <b>receiver</b>.</p></div></div>
+    <div class="a behind row-f" style="--d:2.6s"><div class="badge rel" style="--s:76px;--sh:4px;border-width:4px"><svg viewBox="0 0 64 64"><use href="#i-lens"/></svg></div><div><span class="lbl">We re-examined</span><p>At langar we served, and then the same people served <b>us</b>. Kindness felt less like charity and more like <b>belonging</b>.</p></div></div>
+  </div>
+  <style>
+    .row-c,.row-f{display:flex;gap:22px;align-items:flex-start;padding:24px 28px;min-height:200px}
+    .row-c{border:4px dashed rgba(28,24,20,.4);border-right:0}
+    .row-f{background:var(--cream);border:5px solid var(--ink);box-shadow:10px 10px 0 var(--ink);border-left:14px solid var(--blood)}
+    .row-c p,.row-f p{font:450 24px/1.38 var(--body);margin-top:8px}
+    .row-c .lbl,.row-f .lbl{font-size:17px;color:var(--ink-2)}
+    .row-f .lbl{color:var(--blood)}
+    .row-c .cite,.row-f .cite{margin-top:8px}
+  </style>
+  <aside class="notes">We also found contradictions. Weinstein and Ryan show helping lifts well-being only when it's freely chosen, and honestly, we started for a grade. Somewhere between the forms and the medals, that stopped mattering. The 40 percent "happiness pie" also felt too neat: we could help only because we were healthy, free, and in a city that makes volunteering easy. And at langar, kindness stopped feeling like charity. No giver, no receiver, just belonging.</aside>
+</section>
+
+<!-- ================= 16 CERTIFICATES ================= -->
+<section class="slide" data-speaker="Tohraan" data-title="Evidence · certificates">
+  <div class="abs lbl a fade" style="left:120px;top:84px;color:var(--ink-2)">Evidence of participation</div>
+  <h2 class="abs disp" style="left:116px;top:126px;font-size:96px"><span class="ln" style="--d:.05s"><span>Certificates</span></span></h2>
+  <div class="frame a swing" style="left:100px;top:300px;--d:.3s;--r:-1.5deg"><div class="ph contain cert" data-src="images/cert-blood" data-label="Blood camp certificate · images/cert-blood.jpg" style="width:540px;height:400px"></div></div>
+  <div class="frame a swing" style="left:690px;top:300px;--d:.55s;--r:1deg"><div class="ph contain cert" data-src="images/cert-langar" data-label="Gurudwara certificate or letter · images/cert-langar.jpg" style="width:540px;height:400px"></div></div>
+  <div class="frame a swing" style="left:1280px;top:300px;--d:.8s;--r:-.8deg"><div class="ph contain cert" data-src="images/cert-run" data-label="Unity Run volunteer certificate · images/cert-run.jpg" style="width:540px;height:400px"></div></div>
+  <svg class="abs" style="left:0;top:270px;width:1920px;height:60px" viewBox="0 0 1920 60"><g><circle class="a pop" style="--d:.2s" cx="380" cy="34" r="16" fill="var(--blood)" stroke="var(--ink)" stroke-width="4"/><circle class="a pop" style="--d:.45s" cx="970" cy="34" r="16" fill="var(--saffron)" stroke="var(--ink)" stroke-width="4"/><circle class="a pop" style="--d:.7s" cx="1560" cy="34" r="16" fill="var(--green)" stroke="var(--ink)" stroke-width="4"/></g></svg>
+  <div class="abs" style="left:100px;top:790px;width:1740px;display:flex;justify-content:space-between">
+    <div class="lbl a fade" style="--d:1.4s;width:564px;text-align:center;color:var(--blood)">Blood camp · 2 hrs</div>
+    <div class="lbl a fade" style="--d:1.5s;width:564px;text-align:center;color:var(--saffron)">Langar seva · 1 hr</div>
+    <div class="lbl a fade" style="--d:1.6s;width:564px;text-align:center;color:var(--green)">Unity Run · 8 hrs</div>
+  </div>
+  <div class="abs disp" style="left:0;right:0;top:880px;text-align:center;font-size:96px">
+    <span class="wd" style="--d:1.8s;color:var(--blood)">2</span> <span class="wd" style="--d:1.95s">+</span> <span class="wd" style="--d:2.1s;color:var(--saffron)">1</span> <span class="wd" style="--d:2.25s">+</span> <span class="wd" style="--d:2.4s;color:var(--green)">8</span> <span class="wd" style="--d:2.6s">=</span> <span class="wd" style="--d:2.85s">11 hours</span>
+  </div>
+  <aside class="notes">Here are our certificates for all three activities, eleven hours in total,</aside>
+</section>
+
+<!-- ================= 17 MOMENTS ================= -->
+<section class="slide" data-speaker="Tohraan" data-title="Evidence · pictures and video">
+  <div class="abs lbl a fade" style="left:120px;top:70px;color:var(--ink-2)">Evidence · pictures &amp; video</div>
+  <h2 class="abs disp" style="left:116px;top:108px;font-size:96px"><span class="ln dn" style="--d:.05s"><span>Moments</span></span></h2>
+  <div class="frame a tile" style="left:56px;top:262px;--d:.3s;--ty:90deg"><div class="ph" data-src="images/moment-1" data-label="images/moment-1.jpg" style="width:310px;height:551px"></div><div class="tag" style="--tc:var(--blood)">01 Oct · blood</div></div>
+  <div class="frame a tile" style="left:422px;top:372px;--d:.45s;--ty:-90deg"><div class="ph" data-src="images/moment-2" data-label="images/moment-2.jpg" style="width:310px;height:551px"></div><div class="tag" style="--tc:var(--saffron);color:var(--ink)">14 Nov · langar</div></div>
+  <div class="frame a tile" style="left:788px;top:262px;--d:.6s;--ty:90deg"><div class="ph vid" data-video="images/video.mp4" data-label="Plays on loop · images/video.mp4" style="width:310px;height:551px"></div><div class="tag">▶ on video</div></div>
+  <div class="frame a tile" style="left:1154px;top:372px;--d:.75s;--ty:-90deg"><div class="ph" data-src="images/moment-3" data-label="images/moment-3.jpg" style="width:310px;height:551px"></div><div class="tag" style="--tc:var(--green)">15 Nov · run</div></div>
+  <div class="frame a tile" style="left:1520px;top:262px;--d:.9s;--ty:90deg"><div class="ph" data-src="images/moment-4" data-label="images/moment-4.jpg" style="width:310px;height:551px"></div><div class="tag" style="--tc:var(--green)">every finisher</div></div>
+  <aside class="notes">and a few moments from those eleven hours.</aside>
+</section>
+
+<!-- ================= 18 CLOSE ================= -->
+<section class="slide" data-speaker="Tohraan" data-title="Sustainable happiness is served" style="--fc:#cbbfa9">
+  <div class="blk a shutter-t" style="left:-20px;top:-20px;width:1960px;height:562px;background:var(--ink)"></div>
+  <div class="blk a shutter-b" style="left:-20px;top:538px;width:1960px;height:562px;background:var(--ink)"></div>
+  <div class="abs lbl a fade" style="left:120px;top:130px;color:var(--gold);--d:.8s">What we're taking away</div>
+  <h1 class="abs disp" style="left:114px;top:190px;font-size:150px;color:var(--cream);line-height:.95">
+    <span class="wd" style="--d:1s">Sustainable</span> <span class="wd" style="--d:1.15s">happiness</span><br>
+    <span class="wd" style="--d:1.35s">isn't</span> <span class="wd" style="--d:1.5s">found.</span><br>
+    <span class="wd" style="--d:1.9s">It's</span> <span class="a stamp" style="display:inline-block;color:var(--blood);--d:2.1s;--r:-3deg">served.</span>
+  </h1>
+  <p class="abs body a rise" style="left:120px;top:690px;width:1050px;color:#d9cfbd;font-size:28px;--d:2.2s">Happiness that contributes to individual, community or global well-being <b style="color:var(--cream)">without exploiting other people, the environment or future generations</b>. <span class="cite" style="color:#a99d88">(O'Brien, 2010)</span></p>
+  <div class="abs a rise" style="left:120px;top:850px;display:flex;gap:12px;--d:2.4s">
+    <span class="pb lbl" style="--c:var(--blood);color:var(--cream);padding:12px 16px 10px;font-size:20px">11 hours</span>
+    <span class="pb lbl" style="--c:var(--saffron);padding:12px 16px 10px;font-size:20px">3 activities</span>
+    <span class="pb lbl" style="--c:var(--green);color:var(--cream);padding:12px 16px 10px;font-size:20px">2 donations</span>
+    <span class="pb lbl" style="--c:var(--cream);padding:12px 16px 10px;font-size:20px">~80 flags</span>
+  </div>
+  <div class="badge a pop" style="--s:130px;left:1340px;top:470px;--d:2.5s;box-shadow:8px 8px 0 #000"><svg viewBox="0 0 64 64"><use href="#i-drop"/></svg></div>
+  <div class="badge a pop" style="--s:130px;left:1520px;top:510px;--d:2.6s;box-shadow:8px 8px 0 #000"><svg viewBox="0 0 64 64"><use href="#i-bowl"/></svg></div>
+  <div class="badge a pop" style="--s:130px;left:1700px;top:470px;--d:2.7s;box-shadow:8px 8px 0 #000"><svg viewBox="0 0 64 64"><use href="#i-medal"/></svg></div>
+  <div class="abs disp a rise" style="left:1300px;top:720px;font-size:120px;color:var(--cream);--d:2.8s">Thank you</div>
+  <div class="abs lbl a fade" style="left:1306px;top:850px;color:var(--gold);font-size:26px;--d:3s">Questions welcome</div>
+  <aside class="notes">So here's our conclusion. Sustainable happiness isn't something you find; it's something you serve. It's happiness that helps others without costing anyone else. Thank you. We're happy to take questions.</aside>
+</section>
+
+</div></div>
+<div id="hint">← → or click · F fullscreen · P presenter notes + timer</div>
+
+<div id="presenter">
+  <div><div class="k" id="pnow"></div><h1 id="ptitle"></h1><div id="pnotes"></div></div>
+  <div class="side">
+    <div><div class="k">Speaker timer</div><div id="ptimer">0:00</div><div class="small" id="ptarget"></div></div>
+    <div><div class="k">Total</div><div style="font:400 44px/1 var(--display);margin-top:8px" id="ptotal">0:00</div><div class="small">pair limit 6:00</div></div>
+    <div><div class="k">Next</div><div style="font-size:22px;margin-top:8px" id="pnext"></div></div>
+    <div class="small">← → here also moves the deck. The speaker timer restarts when the speaker changes; the total starts when you leave slide 1.</div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const params = new URLSearchParams(location.search);
+  const slides = [...document.querySelectorAll('.slide')], N = slides.length;
+  const TARGET = {Tohraan: 165, Vedansh: 175};
+
+  // ---- activity tracker: 01 did · 02 impact · 03 learned · 04 research ----
+  document.querySelectorAll('.tracker').forEach(t => {
+    const st = +t.dataset.step, names = ['Did', 'Impact', 'Learned', 'Research'];
+    t.innerHTML = `<span class="act">${t.dataset.act}</span>` + names.map((n, i) =>
+      `<span class="${i + 1 === st ? 'on' : i + 1 < st ? 'done' : ''}">${i + 1 < st ? '✓ ' : ''}0${i + 1} ${n}</span>`).join('');
+  });
+
+  // ---- unity run: place stations on the route ----
+  const route = document.getElementById('route');
+  if (route) {
+    const box = route.ownerSVGElement, ox = parseFloat(box.style.left), oy = parseFloat(box.style.top);
+    const L = route.getTotalLength(), runDelay = .8, runDur = 1.6, K = .3, KT = .55;
+    document.querySelectorAll('.station').forEach(st => {
+      const f = +st.dataset.at, p = route.getPointAtLength(L * f);
+      st.style.left = (ox + p.x - 50) + 'px'; st.style.top = (oy + p.y - 50) + 'px';
+      st.style.setProperty('--d', ((runDelay * K + runDur * KT * f) / K).toFixed(2) + 's');
+    });
+  }
+
+  // ---- layers for parallax + chrome ----
+  slides.forEach((s, i) => {
+    const bg = document.createElement('div'), fg = document.createElement('div');
+    bg.className = 'bg'; fg.className = 'fg';
+    [...s.children].forEach(c => { if (c.tagName === 'ASIDE') return; (c.classList.contains('blk') ? bg : fg).appendChild(c); });
+    s.prepend(bg, fg);
+    const c = s.dataset.speaker === 'Tohraan' ? 'var(--saffron)' : 'var(--green)';
+    s.insertAdjacentHTML('beforeend', `<div class="speaker" style="--c:${c}"><b class="dot"></b>${s.dataset.speaker.toUpperCase()}</div><div class="folio">${String(i+1).padStart(2,'0')} / ${N}</div>`);
+  });
+
+  // ---- photos / certificates / video ----
+  const exts = ['jpg','jpeg','png','webp','JPG','JPEG','PNG'], loads = [];
+  document.querySelectorAll('.ph[data-src]').forEach(ph => loads.push(new Promise(res => {
+    let i = 0; const img = new Image();
+    img.onload = () => { ph.appendChild(img); res(); };
+    img.onerror = () => { if (++i < exts.length) img.src = `${ph.dataset.src}.${exts[i]}`; else { ph.classList.add('missing'); res(); } };
+    img.src = `${ph.dataset.src}.${exts[0]}`;
+  })));
+  document.querySelectorAll('.ph[data-video]').forEach(ph => loads.push(new Promise(res => {
+    const v = document.createElement('video');
+    Object.assign(v, {muted:true, loop:true, autoplay:true, playsInline:true, src:ph.dataset.video});
+    v.onloadeddata = () => { ph.appendChild(v); res(); };
+    v.onerror = () => { ph.classList.add('missing'); res(); };
+    setTimeout(res, 3000);
+  })));
+
+  // ---- count-up ----
+  const countUp = (s, instant) => s.querySelectorAll('[data-count]').forEach(el => {
+    const n = +el.dataset.count;
+    if (instant) { el.textContent = n; return; }
+    const delay = (parseFloat(getComputedStyle(el).getPropertyValue('--d')) || 0) * 300;
+    el.textContent = 0; const t0 = performance.now() + delay + 200;
+    const tick = t => { const k = Math.min(1, Math.max(0, (t - t0) / 700)); el.textContent = Math.round(n * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  });
+
+  // ---- presenter sync ----
+  let ch = null; try { ch = new BroadcastChannel('happiness-deck'); } catch(e) {}
+  const send = m => { try { ch && ch.postMessage(m); } catch(e) {} try { localStorage.setItem('happiness-deck', JSON.stringify({...m, t:Date.now()})); } catch(e) {} };
+  const listen = fn => { if (ch) ch.onmessage = e => fn(e.data); addEventListener('storage', e => { if (e.key === 'happiness-deck' && e.newValue) { try { fn(JSON.parse(e.newValue)); } catch(_) {} } }); };
+
+  if (params.has('presenter')) {
+    document.body.classList.add('presenter');
+    let spk = null, spkStart = Date.now(), totStart = null;
+    const fmt = s => `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+    const show = i => {
+      const s = slides[i];
+      if (s.dataset.speaker !== spk) { spk = s.dataset.speaker; spkStart = Date.now(); }
+      if (totStart === null && i > 0) totStart = Date.now();
+      document.getElementById('pnow').textContent = `Slide ${i+1} / ${N} · ${spk} speaking`;
+      document.getElementById('ptitle').textContent = s.dataset.title;
+      document.getElementById('pnotes').textContent = s.querySelector('.notes')?.textContent || '';
+      document.getElementById('pnext').textContent = slides[i+1] ? `${slides[i+1].dataset.title} (${slides[i+1].dataset.speaker})` : 'End';
+      document.getElementById('ptarget').textContent = `target ${fmt(TARGET[spk])}`;
+    };
+    listen(m => m.type === 'at' && show(m.i));
+    setInterval(() => { const e = (Date.now() - spkStart)/1000, el = document.getElementById('ptimer');
+      el.textContent = fmt(e); el.classList.toggle('over', e > TARGET[spk]);
+      document.getElementById('ptotal').textContent = totStart ? fmt((Date.now()-totStart)/1000) : '0:00'; }, 250);
+    addEventListener('keydown', e => {
+      if (['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)) send({type:'go', d:1});
+      if (['ArrowLeft','ArrowUp','PageUp'].includes(e.key)) send({type:'go', d:-1});
+    });
+    show(0); send({type:'hello'});
+    return;
+  }
+
+  const stage = document.getElementById('stage');
+  const fit = () => stage.style.transform = `translate(-50%,-50%) scale(${Math.min(innerWidth/1920, innerHeight/1080)})`;
+  addEventListener('resize', fit); fit();
+
+  if (params.has('export')) {
+    document.body.classList.add('static');
+    const s = slides[Math.max(0, Math.min(N-1, (+params.get('export')||1) - 1))];
+    s.classList.add('active'); countUp(s, true);
+    Promise.all([document.fonts.ready, ...loads]).then(() => setTimeout(() => window.__ready = true, 400));
+    return;
+  }
+
+  let cur = Math.max(0, Math.min(N-1, (parseInt(location.hash.slice(1))||1) - 1)), busy = false;
+  const seen = new Set();
+  const enter = s => { const was = seen.has(s); s.classList.toggle('seen', was); countUp(s, was); seen.add(s); };
+  slides[cur].classList.add('active'); enter(slides[cur]);
+  const go = to => {
+    if (busy || to < 0 || to >= N || to === cur) return;
+    busy = true;
+    const from = slides[cur], next = slides[to], fwd = to > cur;
+    from.classList.add('moving', fwd ? 'out-l' : 'out-r');
+    next.classList.add('moving', fwd ? 'in-r' : 'in-l');
+    next.style.setProperty('--b', '.3s');
+    next.classList.add('active'); enter(next);
+    setTimeout(() => {
+      from.classList.remove('active','moving','out-l','out-r');
+      next.classList.remove('moving','in-r','in-l');
+      busy = false;
+    }, 700);
+    cur = to; history.replaceState(null, '', '#' + (cur+1)); send({type:'at', i:cur});
+  };
+  addEventListener('keydown', e => {
+    if (['ArrowRight','ArrowDown','PageDown',' ','Enter'].includes(e.key)) { e.preventDefault(); go(cur+1); }
+    else if (['ArrowLeft','ArrowUp','PageUp','Backspace'].includes(e.key)) { e.preventDefault(); go(cur-1); }
+    else if (e.key === 'Home') go(0); else if (e.key === 'End') go(N-1);
+    else if (e.key === 'f' || e.key === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+    else if (e.key === 'p' || e.key === 'P') { window.open(location.pathname + '?presenter', 'presenter', 'width=1200,height=760'); setTimeout(() => send({type:'at', i:cur}), 700); }
+  });
+  addEventListener('click', e => go(cur + (e.clientX > innerWidth/2 ? 1 : -1)));
+  listen(m => { if (m.type === 'go') go(cur + m.d); if (m.type === 'hello') send({type:'at', i:cur}); });
+  setTimeout(() => document.getElementById('hint').style.opacity = 0, 4000);
+})();
+</script>
+</body>
+</html>

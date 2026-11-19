@@ -1,0 +1,8 @@
+.DS_Store
+deploy/
+build/slides/
+build/dry/
+build/images.before-*/
+build/pptx/
+*.pptx
+__pycache__/
