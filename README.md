@@ -47,3 +47,9 @@ git add -A && git commit -m "what you changed" && git push
 ```
 
 The live site is always built from the source files, so a change made only in `index.html` never reaches it.
+
+## Editable PowerPoint
+
+`Sustainable-Happiness-Project-editable.pptx` is made from the live deck: every heading, paragraph and label is a real text box, and photos are real pictures, so you can edit it in PowerPoint or Keynote. Install the fonts in `Sustainable-Happiness-Fonts.zip` first (double-click each .ttf), or the text falls back to a default font.
+
+To regenerate it after changing the deck: `python3 build/game.py && python3 build/pptx_editable.py` (needs `pip install playwright python-pptx pillow fonttools` and Google Chrome).
