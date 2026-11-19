@@ -1,6 +1,6 @@
 """Build the game version of the deck from build/index.before-game.html -> index.html."""
 import pathlib, re
-ROOT = pathlib.Path.home() / "sustainable-happiness-project"
+ROOT = pathlib.Path(__file__).resolve().parent.parent
 old = (ROOT / "build/index.before-game.html").read_text()
 
 # ---------------------------------------------------------------- old pieces

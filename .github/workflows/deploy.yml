@@ -1,0 +1,24 @@
+name: Deploy live deck
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency: deploy
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      VERCEL_ORG_ID: team_e2RVklJ1HCYA5ThioLxPiqbY
+      VERCEL_PROJECT_ID: prj_Dy7QGoNU8tIHd8bQuYQ9A74wUwrq
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build index.html from the sources
+        run: python3 build/game.py
+      - name: Assemble site
+        run: build/site.sh
+      - name: Deploy to https://happiness-through-volunteering.vercel.app
+        working-directory: deploy
+        run: npx --yes vercel@latest deploy --prod --yes --token "${{ secrets.VERCEL_TOKEN }}"

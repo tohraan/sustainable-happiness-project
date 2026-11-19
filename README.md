@@ -36,6 +36,14 @@ python3 build/export.py        # makes Sustainable-Happiness-Project.pdf (flat i
 python3 build/pptx_editable.py # makes the editable PowerPoint
 ```
 
-## Publishing
+## Publishing (automatic)
 
-Commit and push your changes. Tohraan runs `build/deploy.sh`, which updates the live link and needs his Vercel login.
+Push to `main` and the live link updates by itself about a minute later. The GitHub Action in `.github/workflows/deploy.yml` reruns `build/game.py` and deploys to https://happiness-through-volunteering.vercel.app. You can follow it in the repo's **Actions** tab.
+
+```sh
+git pull                       # get the other person's changes first
+python3 build/game.py          # rebuild index.html and check it locally
+git add -A && git commit -m "what you changed" && git push
+```
+
+The live site is always built from the source files, so a change made only in `index.html` never reaches it.
